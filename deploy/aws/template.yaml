@@ -1,0 +1,222 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Order Microservice - Clean Architecture with CQRS on AWS Lambda
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 512
+    Runtime: dotnet8
+    Architectures:
+      - x86_64
+    Environment:
+      Variables:
+        ORDERS_TABLE: !Ref OrdersTable
+        ORDER_EVENTS_TOPIC_ARN: !Ref OrderEventsTopic
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+
+Resources:
+  # DynamoDB Table
+  OrdersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub 'Orders-${Environment}'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: customerId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: CustomerIdIndex
+          KeySchema:
+            - AttributeName: customerId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+
+  # SNS Topic for Domain Events
+  OrderEventsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub 'order-events-${Environment}'
+
+  # Lambda Functions
+  CreateOrderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'Order-CreateOrder-${Environment}'
+      Handler: Order.Api::Order.Api.Functions.CreateOrder::Handler
+      CodeUri: ./src/Order.Api/
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref OrdersTable
+        - SNSPublishMessagePolicy:
+            TopicName: !GetAtt OrderEventsTopic.TopicName
+      Events:
+        CreateOrder:
+          Type: Api
+          Properties:
+            RestApiId: !Ref OrderApi
+            Path: /orders
+            Method: POST
+
+  GetOrderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'Order-GetOrder-${Environment}'
+      Handler: Order.Api::Order.Api.Functions.GetOrder::Handler
+      CodeUri: ./src/Order.Api/
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref OrdersTable
+      Events:
+        GetOrder:
+          Type: Api
+          Properties:
+            RestApiId: !Ref OrderApi
+            Path: /orders/{id}
+            Method: GET
+
+  GetAllOrdersFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'Order-GetAllOrders-${Environment}'
+      Handler: Order.Api::Order.Api.Functions.GetAllOrders::Handler
+      CodeUri: ./src/Order.Api/
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref OrdersTable
+      Events:
+        GetAllOrders:
+          Type: Api
+          Properties:
+            RestApiId: !Ref OrderApi
+            Path: /orders
+            Method: GET
+
+  GetOrdersByCustomerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'Order-GetOrdersByCustomer-${Environment}'
+      Handler: Order.Api::Order.Api.Functions.GetOrdersByCustomer::Handler
+      CodeUri: ./src/Order.Api/
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref OrdersTable
+      Events:
+        GetOrdersByCustomer:
+          Type: Api
+          Properties:
+            RestApiId: !Ref OrderApi
+            Path: /orders/customer/{customerId}
+            Method: GET
+
+  UpdateOrderStatusFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'Order-UpdateOrderStatus-${Environment}'
+      Handler: Order.Api::Order.Api.Functions.UpdateOrderStatus::Handler
+      CodeUri: ./src/Order.Api/
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref OrdersTable
+        - SNSPublishMessagePolicy:
+            TopicName: !GetAtt OrderEventsTopic.TopicName
+      Events:
+        UpdateOrderStatus:
+          Type: Api
+          Properties:
+            RestApiId: !Ref OrderApi
+            Path: /orders/{id}/status
+            Method: PUT
+
+  CancelOrderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'Order-CancelOrder-${Environment}'
+      Handler: Order.Api::Order.Api.Functions.CancelOrder::Handler
+      CodeUri: ./src/Order.Api/
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref OrdersTable
+        - SNSPublishMessagePolicy:
+            TopicName: !GetAtt OrderEventsTopic.TopicName
+      Events:
+        CancelOrder:
+          Type: Api
+          Properties:
+            RestApiId: !Ref OrderApi
+            Path: /orders/{id}/cancel
+            Method: POST
+
+  AddOrderItemFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'Order-AddOrderItem-${Environment}'
+      Handler: Order.Api::Order.Api.Functions.AddOrderItem::Handler
+      CodeUri: ./src/Order.Api/
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref OrdersTable
+        - SNSPublishMessagePolicy:
+            TopicName: !GetAtt OrderEventsTopic.TopicName
+      Events:
+        AddOrderItem:
+          Type: Api
+          Properties:
+            RestApiId: !Ref OrderApi
+            Path: /orders/{id}/items
+            Method: POST
+
+  DeleteOrderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'Order-DeleteOrder-${Environment}'
+      Handler: Order.Api::Order.Api.Functions.DeleteOrder::Handler
+      CodeUri: ./src/Order.Api/
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref OrdersTable
+      Events:
+        DeleteOrder:
+          Type: Api
+          Properties:
+            RestApiId: !Ref OrderApi
+            Path: /orders/{id}
+            Method: DELETE
+
+  # API Gateway
+  OrderApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub 'Order-API-${Environment}'
+      StageName: !Ref Environment
+      Cors:
+        AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+        AllowOrigin: "'*'"
+
+Outputs:
+  ApiUrl:
+    Description: API Gateway endpoint URL
+    Value: !Sub 'https://${OrderApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/'
+
+  OrdersTableName:
+    Description: DynamoDB Orders table name
+    Value: !Ref OrdersTable
+
+  OrderEventsTopicArn:
+    Description: SNS Topic ARN for order events
+    Value: !Ref OrderEventsTopic
