@@ -9,10 +9,15 @@ Globals:
     Runtime: dotnet8
     Architectures:
       - x86_64
+    Tracing: Active
     Environment:
       Variables:
         ORDERS_TABLE: !Ref OrdersTable
         ORDER_EVENTS_TOPIC_ARN: !Ref OrderEventsTopic
+        POWERTOOLS_SERVICE_NAME: OrderService
+        POWERTOOLS_METRICS_NAMESPACE: OrderService
+        POWERTOOLS_LOG_LEVEL: INFO
+        POWERTOOLS_LOGGER_LOG_EVENT: true
 
 Parameters:
   Environment:
