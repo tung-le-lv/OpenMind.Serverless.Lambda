@@ -1,4 +1,63 @@
-## Local Development
+## Local Debug
+
+### Step 1 — Start DynamoDB Local
+
+```powershell
+podman compose up -d
+```
+
+### Step 2 — Start the Lambda Test Tool
+
+```powershell
+dotnet tool install -g Amazon.Lambda.TestTool-8.0
+
+dotnet lambda-test-tool-8.0 --port 5050
+```
+
+Leave this terminal open. The tool's UI is available at `http://localhost:5050`.
+
+### Step 3 — Run the debug configuration in Rider
+
+1. Open the **Run Configuration** dropdown (top-right in Rider)
+2. Select the profile for the function you want to debug (e.g. **CreateOrder**, **GetAllOrders**, etc.)
+3. Click **Debug**
+
+The process starts and connects to the test tool. Each profile sets `LAMBDA_HANDLER` and all required environment variables automatically via `Properties/launchSettings.json`.
+
+### Step 4 — Send a test event
+
+1. Go to `http://localhost:5050`
+2. Click the **Executable Assembly** link at the top of the page
+3. Paste an API Gateway event into the **Function Input** box and click **Queue Event**
+
+Example event for `GetAllOrders`:
+
+```json
+{
+  "httpMethod": "GET",
+  "path": "/orders",
+  "headers": {},
+  "queryStringParameters": null,
+  "body": null,
+  "isBase64Encoded": false
+}
+```
+
+Example event for `CreateOrder`:
+
+```json
+{
+  "httpMethod": "POST",
+  "path": "/orders",
+  "headers": { "Content-Type": "application/json" },
+  "body": "{\"customerId\":\"cust-1\",\"items\":[{\"productId\":\"prod-1\",\"productName\":\"Wireless Mouse\",\"quantity\":2,\"unitPrice\":29.99}]}",
+  "isBase64Encoded": false
+}
+```
+
+![Lambda Test Tool](docs/lambda-test-tool.jpg)
+
+## Local Deployment and Tests
 
 ### One-time setup
 
