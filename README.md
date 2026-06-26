@@ -87,6 +87,11 @@ sam build --template-file deploy/aws/template.yaml --base-dir .
 podman build -t order-api-local:latest -f deploy/local/Dockerfile.lambda .aws-sam/build/CreateOrderFunction
 ```
 
+or  
+```powershell
+.\deploy\local\build.ps1
+```
+
 Then **Ctrl+C** SAM and re-run the `sam local start-api` command from Step 4.
 
 ### Inspect DynamoDB

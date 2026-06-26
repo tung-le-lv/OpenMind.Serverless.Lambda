@@ -81,7 +81,7 @@ public class CreateOrderFunction(IMediator mediator)
         catch (ValidationException ex)
         {
             var errors = ex.Errors.Select(e => e.ErrorMessage).ToList();
-            return ApiResponseHelper.CreateResponse(400, ApiResponse<string>.ErrorResponse("Validation failed.", errors));
+            return ApiResponseHelper.CreateResponse(400, ApiResponse<string>.ErrorResponse("Application validation failed.", errors));
         }
         catch (Exception ex)
         {

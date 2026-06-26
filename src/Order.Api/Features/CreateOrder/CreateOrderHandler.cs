@@ -45,7 +45,7 @@ public class CreateOrderHandler(IOrderRepository orderRepository, IEventBus even
         }
         catch (DomainException ex)
         {
-            return new CreateOrderResult(false, null, "Validation failed.", [ex.Message]);
+            return new CreateOrderResult(false, null, "Domain validation failed.", [ex.Message]);
         }
         catch (Exception ex)
         {
