@@ -1,0 +1,140 @@
+@baseUrl = http://127.0.0.1:3000
+@orderId = {{createOrder.response.body.data.orderId}}
+
+### Create Order
+# @name createOrder
+POST {{baseUrl}}/orders
+Content-Type: application/json
+
+{
+  "customerId": "cust-1",
+  "items": [
+    {
+      "productId": "prod-1",
+      "productName": "Wireless Mouse",
+      "quantity": 2,
+      "unitPrice": 29.99
+    },
+    {
+      "productId": "prod-2",
+      "productName": "Mechanical Keyboard",
+      "quantity": 1,
+      "unitPrice": 89.99
+    }
+  ],
+  "shippingAddress": {
+    "street": "123 Main St",
+    "city": "Sydney",
+    "state": "NSW",
+    "zipCode": "2000",
+    "country": "Australia"
+  }
+}
+
+###
+
+### Create Order - validation error (missing customerId)
+POST {{baseUrl}}/orders
+Content-Type: application/json
+
+{
+  "customerId": "",
+  "items": [],
+  "shippingAddress": null
+}
+
+###
+
+### Get All Orders
+GET {{baseUrl}}/orders
+
+###
+
+### Get Order by ID
+GET {{baseUrl}}/orders/{{orderId}}
+
+###
+
+### Get Order by ID - not found
+GET {{baseUrl}}/orders/non-existent-id
+
+###
+
+### Get Orders by Customer
+GET {{baseUrl}}/orders/customer/cust-1
+
+###
+
+### Add Item to Order
+POST {{baseUrl}}/orders/{{orderId}}/items
+Content-Type: application/json
+
+{
+  "productId": "prod-3",
+  "productName": "USB Hub",
+  "quantity": 1,
+  "unitPrice": 19.99
+}
+
+###
+
+### Add Item - validation error (quantity = 0)
+POST {{baseUrl}}/orders/{{orderId}}/items
+Content-Type: application/json
+
+{
+  "productId": "prod-4",
+  "productName": "Monitor",
+  "quantity": 0,
+  "unitPrice": 299.99
+}
+
+###
+
+### Update Order Status - Pending -> Confirmed (1)
+PUT {{baseUrl}}/orders/{{orderId}}/status
+Content-Type: application/json
+
+{
+  "newStatus": 1
+}
+
+###
+
+### Update Order Status - Confirmed -> Processing (2)
+PUT {{baseUrl}}/orders/{{orderId}}/status
+Content-Type: application/json
+
+{
+  "newStatus": 2
+}
+
+###
+
+### Update Order Status - Processing -> Shipped (3)
+PUT {{baseUrl}}/orders/{{orderId}}/status
+Content-Type: application/json
+
+{
+  "newStatus": 3
+}
+
+###
+
+### Update Order Status - Shipped -> Delivered (4)
+PUT {{baseUrl}}/orders/{{orderId}}/status
+Content-Type: application/json
+
+{
+  "newStatus": 4
+}
+
+###
+
+### Cancel Order
+POST {{baseUrl}}/orders/{{orderId}}/cancel
+
+###
+
+### Delete Order
+DELETE {{baseUrl}}/orders/{{orderId}}
