@@ -65,6 +65,11 @@ GET {{baseUrl}}/orders/customer/cust-1
 
 ###
 
+### Get Orders by Customer and Status
+GET {{baseUrl}}/orders/customer/cust-1/status/Pending
+
+###
+
 ### Add Item to Order
 POST {{baseUrl}}/orders/{{orderId}}/items
 Content-Type: application/json

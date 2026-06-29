@@ -119,6 +119,21 @@
         "POWERTOOLS_SERVICE_NAME": "OrderService",
         "POWERTOOLS_LOG_LEVEL": "DEBUG"
       }
+    },
+    "GetOrdersByCustomerAndStatus": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "LAMBDA_HANDLER": "GetOrdersByCustomerAndStatus",
+        "AWS_LAMBDA_RUNTIME_API": "localhost:5050",
+        "ORDERS_TABLE": "Orders-local",
+        "USE_LOCAL_EVENT_BUS": "true",
+        "AWS_ENDPOINT_URL": "http://localhost:8000",
+        "AWS_ACCESS_KEY_ID": "test",
+        "AWS_SECRET_ACCESS_KEY": "test",
+        "AWS_DEFAULT_REGION": "ap-southeast-2",
+        "POWERTOOLS_SERVICE_NAME": "OrderService",
+        "POWERTOOLS_LOG_LEVEL": "DEBUG"
+      }
     }
   }
 }

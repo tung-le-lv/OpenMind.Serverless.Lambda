@@ -131,3 +131,17 @@ Resources:
           Properties:
             Path: /orders/{id}
             Method: DELETE
+
+  GetOrdersByCustomerAndStatusFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      PackageType: Image
+      ImageUri: order-api-local:latest
+      ImageConfig:
+        Command: ["Order.Api::Order.Api.Features.GetOrdersByCustomerAndStatus.GetOrdersByCustomerAndStatusFunction::Handler"]
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /orders/customer/{customerId}/status/{status}
+            Method: GET

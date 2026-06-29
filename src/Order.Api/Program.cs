@@ -9,6 +9,7 @@ using Order.Api.Features.DeleteOrder;
 using Order.Api.Features.GetAllOrders;
 using Order.Api.Features.GetOrder;
 using Order.Api.Features.GetOrdersByCustomer;
+using Order.Api.Features.GetOrdersByCustomerAndStatus;
 using Order.Api.Features.UpdateOrderStatus;
 using Serilog;
 
@@ -37,8 +38,9 @@ try
         "AddOrderItem"        => LambdaBootstrapBuilder.Create<APIGatewayProxyRequest, APIGatewayProxyResponse>(new AddOrderItemFunction().Handler, serializer).Build().RunAsync(),
         "UpdateOrderStatus"   => LambdaBootstrapBuilder.Create<APIGatewayProxyRequest, APIGatewayProxyResponse>(new UpdateOrderStatusFunction().Handler, serializer).Build().RunAsync(),
         "CancelOrder"         => LambdaBootstrapBuilder.Create<APIGatewayProxyRequest, APIGatewayProxyResponse>(new CancelOrderFunction().Handler, serializer).Build().RunAsync(),
-        "DeleteOrder"         => LambdaBootstrapBuilder.Create<APIGatewayProxyRequest, APIGatewayProxyResponse>(new DeleteOrderFunction().Handler, serializer).Build().RunAsync(),
-        _                     => throw new InvalidOperationException($"Unknown handler: {handler}")
+        "DeleteOrder"                    => LambdaBootstrapBuilder.Create<APIGatewayProxyRequest, APIGatewayProxyResponse>(new DeleteOrderFunction().Handler, serializer).Build().RunAsync(),
+        "GetOrdersByCustomerAndStatus"   => LambdaBootstrapBuilder.Create<APIGatewayProxyRequest, APIGatewayProxyResponse>(new GetOrdersByCustomerAndStatusFunction().Handler, serializer).Build().RunAsync(),
+        _                                => throw new InvalidOperationException($"Unknown handler: {handler}")
     });
 }
 catch (Exception ex)

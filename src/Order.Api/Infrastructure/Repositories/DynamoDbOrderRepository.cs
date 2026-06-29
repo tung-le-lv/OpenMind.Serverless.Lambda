@@ -1,6 +1,7 @@
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 using Order.Api.Domain.Entities;
+using Order.Api.Domain.Enums;
 using Order.Api.Domain.Repositories;
 
 namespace Order.Api.Infrastructure.Repositories;
@@ -35,6 +36,29 @@ public class DynamoDbOrderRepository(IAmazonDynamoDB dynamoDbClient) : IOrderRep
             ExpressionAttributeValues = new Dictionary<string, AttributeValue>
             {
                 { ":customerId", new AttributeValue { S = customerId } }
+            }
+        };
+
+        var response = await dynamoDbClient.QueryAsync(request, cancellationToken);
+        return response.Items.Select(OrderMapper.ToOrder);
+    }
+
+    public async Task<IEnumerable<OrderAggregate>> GetByCustomerIdAndStatusAsync(string customerId, OrderStatus status, CancellationToken cancellationToken = default)
+    {
+        var request = new QueryRequest
+        {
+            TableName = _tableName,
+            IndexName = "CustomerIdIndex",
+            KeyConditionExpression = "customerId = :customerId",
+            FilterExpression = "#status = :status",
+            ExpressionAttributeNames = new Dictionary<string, string>
+            {
+                { "#status", "status" }
+            },
+            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+            {
+                { ":customerId", new AttributeValue { S = customerId } },
+                { ":status", new AttributeValue { S = status.ToString() } }
             }
         };
 
