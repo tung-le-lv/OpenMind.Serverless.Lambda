@@ -12,16 +12,11 @@ namespace Order.IntegrationTests;
 
 public class DynamoDbOrderRepositoryTests : IAsyncLifetime
 {
-    private readonly DynamoDbContainer _dynamoDbContainer;
+    private readonly DynamoDbContainer _dynamoDbContainer = new DynamoDbBuilder()
+        .WithImage("amazon/dynamodb-local:latest")
+        .Build();
     private IAmazonDynamoDB? _dynamoDbClient;
     private DynamoDbOrderRepository? _repository;
-
-    public DynamoDbOrderRepositoryTests()
-    {
-        _dynamoDbContainer = new DynamoDbBuilder()
-            .WithImage("amazon/dynamodb-local:latest")
-            .Build();
-    }
 
     public async Task InitializeAsync()
     {

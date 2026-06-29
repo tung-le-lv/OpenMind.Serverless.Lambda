@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using Moq;
 using Order.Api.Domain.Entities;
 using Order.Api.Domain.Enums;
@@ -21,7 +21,7 @@ public class GetOrderQueryHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WithExistingOrder_ShouldReturnOrderDto()
+    public async Task Handle_WhenOrderExists_ShouldReturnOrderDetails()
     {
         var orderId = "order-123";
         var order = CreateTestOrder(orderId, "customer-123");
@@ -37,7 +37,7 @@ public class GetOrderQueryHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WithNonExistingOrder_ShouldReturnNull()
+    public async Task Handle_WhenOrderDoesNotExist_ShouldReturnNothing()
     {
         var orderId = "non-existent";
         _mockRepository.Setup(r => r.GetByIdAsync(orderId, It.IsAny<CancellationToken>()))

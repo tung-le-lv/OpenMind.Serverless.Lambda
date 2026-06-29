@@ -37,7 +37,8 @@ public class GetOrdersByCustomerAndStatusFunction(IMediator mediator)
     {
         try
         {
-            var customerId = request.PathParameters?["customerId"];
+            string? customerId = null;
+            request.PathParameters?.TryGetValue("customerId", out customerId);
             if (string.IsNullOrWhiteSpace(customerId))
             {
                 return ApiResponseHelper.CreateResponse(400, ApiResponse<IEnumerable<OrderDto>>.ErrorResponse("Customer ID is required."));

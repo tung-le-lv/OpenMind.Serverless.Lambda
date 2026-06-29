@@ -1,11 +1,11 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using Moq;
 using Order.Api.Domain.Entities;
 using Order.Api.Domain.Events;
-using Order.Api.Domain.Interfaces;
+using Order.Api.Application.Interfaces;
 using Order.Api.Domain.Repositories;
 using Order.Api.Features.CreateOrder;
-using Order.Api.Shared;
+using Order.Api.Application.Dtos;
 using Xunit;
 
 namespace Order.UnitTests.Application;
@@ -24,7 +24,7 @@ public class CreateOrderCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WithValidCommand_ShouldCreateOrder()
+    public async Task Handle_WhenValidOrderSubmitted_ShouldCreateOrder()
     {
         var command = new CreateOrderCommand(
             CustomerId: "customer-123",
@@ -43,7 +43,7 @@ public class CreateOrderCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WithEmptyCustomerId_ShouldReturnError()
+    public async Task Handle_WhenCustomerIdMissing_ShouldRejectOrder()
     {
         var command = new CreateOrderCommand(
             CustomerId: "",
@@ -58,7 +58,7 @@ public class CreateOrderCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_ShouldPublishDomainEvents()
+    public async Task Handle_WhenItemAdded_ShouldPublishEvents()
     {
         var command = new CreateOrderCommand(
             CustomerId: "customer-123",

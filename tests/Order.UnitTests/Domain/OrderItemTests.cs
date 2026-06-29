@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Order.Api.Domain.Entities;
+using Order.Api.Domain.ValueObjects;
 using Xunit;
 
 namespace Order.UnitTests.Domain;
@@ -51,7 +52,7 @@ public class OrderItemTests
     {
         var item = OrderItem.Create("prod-1", "Product 1", 2, 10.00m);
 
-        item.IncreaseQuantity(3);
+        item = item.IncreaseQuantity(3);
 
         item.Quantity.Should().Be(5);
         item.Subtotal.Amount.Should().Be(50.00m);
@@ -62,7 +63,7 @@ public class OrderItemTests
     {
         var item = OrderItem.Create("prod-1", "Product 1", 5, 10.00m);
 
-        item.DecreaseQuantity(3);
+        item = item.DecreaseQuantity(3);
 
         item.Quantity.Should().Be(2);
     }
