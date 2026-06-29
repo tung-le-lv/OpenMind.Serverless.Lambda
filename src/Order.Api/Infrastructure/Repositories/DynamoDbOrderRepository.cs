@@ -66,6 +66,24 @@ public class DynamoDbOrderRepository(IAmazonDynamoDB dynamoDbClient) : IOrderRep
         return response.Items.Select(OrderMapper.ToOrder);
     }
 
+    public async Task<IEnumerable<OrderAggregate>> GetByDateAsync(DateOnly date, CancellationToken cancellationToken = default)
+    {
+        var request = new QueryRequest
+        {
+            TableName = _tableName,
+            IndexName = "OrderDateIndex",
+            KeyConditionExpression = "orderDate = :date",
+            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+            {
+                { ":date", new AttributeValue { S = date.ToString("yyyy-MM-dd") } }
+            },
+            ScanIndexForward = false
+        };
+
+        var response = await dynamoDbClient.QueryAsync(request, cancellationToken);
+        return response.Items.Select(OrderMapper.ToOrder);
+    }
+
     public async Task<IEnumerable<OrderAggregate>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         var request = new ScanRequest
@@ -114,4 +132,5 @@ public class DynamoDbOrderRepository(IAmazonDynamoDB dynamoDbClient) : IOrderRep
 
         await dynamoDbClient.DeleteItemAsync(request, cancellationToken);
     }
+    
 }

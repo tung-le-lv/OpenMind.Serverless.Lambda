@@ -45,6 +45,7 @@ internal static class OrderMapper
         var item = new Dictionary<string, AttributeValue>
         {
             { "id", new AttributeValue { S = order.Id } },
+            { "orderDate", new AttributeValue { S = order.CreatedAt.ToString("yyyy-MM-dd") } },
             { "customerId", new AttributeValue { S = order.CustomerId } },
             { "totalAmount", new AttributeValue { N = order.TotalAmount.Amount.ToString() } },
             { "currency", new AttributeValue { S = order.TotalAmount.Currency } },

@@ -132,6 +132,20 @@ Resources:
             Path: /orders/{id}
             Method: DELETE
 
+  GetOrdersByDateRangeFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      PackageType: Image
+      ImageUri: order-api-local:latest
+      ImageConfig:
+        Command: ["Order.Api::Order.Api.Features.GetOrdersByDateRange.GetOrdersByDateRangeFunction::Handler"]
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /orders/filter
+            Method: GET
+
   GetOrdersByCustomerAndStatusFunction:
     Type: AWS::Serverless::Function
     Properties:

@@ -10,6 +10,7 @@ using Order.Api.Features.GetAllOrders;
 using Order.Api.Features.GetOrder;
 using Order.Api.Features.GetOrdersByCustomer;
 using Order.Api.Features.GetOrdersByCustomerAndStatus;
+using Order.Api.Features.GetOrdersByDateRange;
 using Order.Api.Features.UpdateOrderStatus;
 using Serilog;
 
@@ -40,6 +41,7 @@ try
         "CancelOrder"         => LambdaBootstrapBuilder.Create<APIGatewayProxyRequest, APIGatewayProxyResponse>(new CancelOrderFunction().Handler, serializer).Build().RunAsync(),
         "DeleteOrder"                    => LambdaBootstrapBuilder.Create<APIGatewayProxyRequest, APIGatewayProxyResponse>(new DeleteOrderFunction().Handler, serializer).Build().RunAsync(),
         "GetOrdersByCustomerAndStatus"   => LambdaBootstrapBuilder.Create<APIGatewayProxyRequest, APIGatewayProxyResponse>(new GetOrdersByCustomerAndStatusFunction().Handler, serializer).Build().RunAsync(),
+        "GetOrdersByDateRange"           => LambdaBootstrapBuilder.Create<APIGatewayProxyRequest, APIGatewayProxyResponse>(new GetOrdersByDateRangeFunction().Handler, serializer).Build().RunAsync(),
         _                                => throw new InvalidOperationException($"Unknown handler: {handler}")
     });
 }

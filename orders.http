@@ -50,6 +50,11 @@ GET {{baseUrl}}/orders
 
 ###
 
+### Get Orders by Date
+GET {{baseUrl}}/orders/filter?date=2026-06-15
+
+###
+
 ### Get Order by ID
 GET {{baseUrl}}/orders/{{orderId}}
 
