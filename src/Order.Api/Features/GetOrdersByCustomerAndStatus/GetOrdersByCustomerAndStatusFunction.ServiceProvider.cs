@@ -14,7 +14,7 @@ public partial class GetOrdersByCustomerAndStatusFunction
     {
         var services = new ServiceCollection();
         services.AddCoreServices();
-        services.AddTransient<IRequestHandler<GetOrdersByCustomerAndStatusQuery, IEnumerable<OrderDto>>, GetOrdersByCustomerAndStatusHandler>();
+        services.AddTransient<IRequestHandler<GetOrdersByCustomerAndStatusQuery, IEnumerable<OrderDto>>, GetOrdersByCustomerAndStatusQueryHandler>();
         return services.BuildServiceProvider();
     }
 }

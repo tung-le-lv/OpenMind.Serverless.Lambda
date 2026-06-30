@@ -14,7 +14,7 @@ public partial class GetAllOrdersFunction
     {
         var services = new ServiceCollection();
         services.AddCoreServices();
-        services.AddTransient<IRequestHandler<GetAllOrdersQuery, IEnumerable<OrderDto>>, GetAllOrdersHandler>();
+        services.AddTransient<IRequestHandler<GetAllOrdersQuery, IEnumerable<OrderDto>>, GetAllOrdersQueryHandler>();
         return services.BuildServiceProvider();
     }
 }

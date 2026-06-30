@@ -3,7 +3,6 @@ using Amazon.DynamoDBv2.Model;
 using DotNet.Testcontainers.Builders;
 using FluentAssertions;
 using Order.Api.Domain.Entities;
-using Order.Api.Domain.ValueObjects;
 using Order.Api.Infrastructure.Repositories;
 using Testcontainers.DynamoDb;
 using Xunit;
@@ -78,8 +77,7 @@ public class DynamoDbOrderRepositoryTests : IAsyncLifetime
     public async Task AddAsync_ShouldPersistOrder()
     {
         // Arrange
-        var address = Address.Create("123 Main St", "Seattle", "WA", "98101", "USA");
-        var order = OrderAggregate.Create("customer-123", address);
+        var order = OrderAggregate.Create("customer-123");
         order.AddItem("prod-1", "Product 1", 2, 10.00m);
 
         // Act

@@ -15,7 +15,7 @@ public partial class AddOrderItemFunction
         services.AddCoreServices();
         services.AddEventBus();
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
-        services.AddTransient<IRequestHandler<AddOrderItemCommand, AddOrderItemResult>, AddOrderItemHandler>();
+        services.AddTransient<IRequestHandler<AddOrderItemCommand, AddOrderItemResult>, AddOrderItemCommandHandler>();
         services.AddTransient<IValidator<AddOrderItemCommand>, AddOrderItemValidator>();
         return services.BuildServiceProvider();
     }

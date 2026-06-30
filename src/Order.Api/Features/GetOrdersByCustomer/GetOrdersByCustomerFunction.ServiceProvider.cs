@@ -1,7 +1,6 @@
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Order.Api.Application.Dtos;
-using Order.Api.Domain.Repositories;
 using Order.Api.Shared;
 
 namespace Order.Api.Features.GetOrdersByCustomer;
@@ -14,7 +13,7 @@ public partial class GetOrdersByCustomerFunction
     {
         var services = new ServiceCollection();
         services.AddCoreServices();
-        services.AddTransient<IRequestHandler<GetOrdersByCustomerQuery, IEnumerable<OrderDto>>, GetOrdersByCustomerHandler>();
+        services.AddTransient<IRequestHandler<GetOrdersByCustomerQuery, IEnumerable<OrderDto>>, GetOrdersByCustomerQueryHandler>();
         return services.BuildServiceProvider();
     }
 }

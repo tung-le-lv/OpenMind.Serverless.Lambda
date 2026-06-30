@@ -12,12 +12,12 @@ namespace Order.UnitTests.Application;
 public class GetOrderQueryHandlerTests
 {
     private readonly Mock<IOrderRepository> _mockRepository;
-    private readonly GetOrderHandler _handler;
+    private readonly GetOrderQueryHandler _handler;
 
     public GetOrderQueryHandlerTests()
     {
         _mockRepository = new Mock<IOrderRepository>();
-        _handler = new GetOrderHandler(_mockRepository.Object);
+        _handler = new GetOrderQueryHandler(_mockRepository.Object);
     }
 
     [Fact]
@@ -55,7 +55,6 @@ public class GetOrderQueryHandlerTests
             items: [OrderItem.Reconstitute("prod-1", "Product 1", 2, 10.00m)],
             totalAmount: 20.00m,
             status: OrderStatus.Pending,
-            shippingAddress: Address.Create("123 Main St", "Seattle", "WA", "98101", "USA"),
             createdAt: DateTime.UtcNow,
             updatedAt: DateTime.UtcNow
         );

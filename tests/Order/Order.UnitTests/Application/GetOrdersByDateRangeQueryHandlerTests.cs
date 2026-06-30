@@ -12,10 +12,10 @@ namespace Order.UnitTests.Application;
 public class GetOrdersByDateRangeQueryHandlerTests
 {
     private readonly Mock<IOrderRepository> _repo = new();
-    private readonly GetOrdersByDateRangeHandler _handler;
+    private readonly GetOrdersByDateRangeQueryHandler _handler;
 
     public GetOrdersByDateRangeQueryHandlerTests() =>
-        _handler = new GetOrdersByDateRangeHandler(_repo.Object);
+        _handler = new GetOrdersByDateRangeQueryHandler(_repo.Object);
 
     [Fact]
     public async Task Handle_WhenQueryingByDate_ShouldReturnOrdersForThatDay()
@@ -23,7 +23,7 @@ public class GetOrdersByDateRangeQueryHandlerTests
         var date = new DateOnly(2024, 6, 1);
         var orders = new List<OrderAggregate>
         {
-            OrderAggregate.Reconstitute("o1", "cust-1", [OrderItem.Reconstitute("p1", "P1", 1, 10m)], 10m, OrderStatus.Pending, null, DateTime.UtcNow, DateTime.UtcNow)
+            OrderAggregate.Reconstitute("o1", "cust-1", [OrderItem.Reconstitute("p1", "P1", 1, 10m)], 10m, OrderStatus.Pending, DateTime.UtcNow, DateTime.UtcNow)
         };
         _repo.Setup(r => r.GetByDateAsync(date, It.IsAny<CancellationToken>())).ReturnsAsync(orders);
 

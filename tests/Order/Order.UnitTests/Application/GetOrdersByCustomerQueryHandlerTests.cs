@@ -12,10 +12,10 @@ namespace Order.UnitTests.Application;
 public class GetOrdersByCustomerQueryHandlerTests
 {
     private readonly Mock<IOrderRepository> _repo = new();
-    private readonly GetOrdersByCustomerHandler _handler;
+    private readonly GetOrdersByCustomerQueryHandler _handler;
 
     public GetOrdersByCustomerQueryHandlerTests() =>
-        _handler = new GetOrdersByCustomerHandler(_repo.Object);
+        _handler = new GetOrdersByCustomerQueryHandler(_repo.Object);
 
     [Fact]
     public async Task Handle_WhenCustomerHasOrders_ShouldReturnTheirOrders()
@@ -44,5 +44,5 @@ public class GetOrdersByCustomerQueryHandlerTests
     }
 
     private static OrderAggregate MakeOrder(string id, string customerId, OrderStatus status) =>
-        OrderAggregate.Reconstitute(id, customerId, [OrderItem.Reconstitute("p1", "P1", 1, 10m)], 10m, status, null, DateTime.UtcNow, DateTime.UtcNow);
+        OrderAggregate.Reconstitute(id, customerId, [OrderItem.Reconstitute("p1", "P1", 1, 10m)], 10m, status, DateTime.UtcNow, DateTime.UtcNow);
 }

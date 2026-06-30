@@ -14,10 +14,10 @@ public class AddOrderItemCommandHandlerTests
 {
     private readonly Mock<IOrderRepository> _repo = new();
     private readonly Mock<IEventBus> _bus = new();
-    private readonly AddOrderItemHandler _handler;
+    private readonly AddOrderItemCommandHandler _handler;
 
     public AddOrderItemCommandHandlerTests() =>
-        _handler = new AddOrderItemHandler(_repo.Object, _bus.Object);
+        _handler = new AddOrderItemCommandHandler(_repo.Object, _bus.Object);
 
     [Fact]
     public async Task Handle_WhenValidRequest_ShouldAddItemToOrder()
@@ -68,8 +68,8 @@ public class AddOrderItemCommandHandlerTests
     }
 
     private static OrderAggregate PendingOrder() =>
-        OrderAggregate.Reconstitute("order-1", "cust-1", [], 0m, OrderStatus.Pending, null, DateTime.UtcNow, DateTime.UtcNow);
+        OrderAggregate.Reconstitute("order-1", "cust-1", [], 0m, OrderStatus.Pending, DateTime.UtcNow, DateTime.UtcNow);
 
     private static OrderAggregate ConfirmedOrder() =>
-        OrderAggregate.Reconstitute("order-2", "cust-1", [], 0m, OrderStatus.Confirmed, null, DateTime.UtcNow, DateTime.UtcNow);
+        OrderAggregate.Reconstitute("order-2", "cust-1", [], 0m, OrderStatus.Confirmed, DateTime.UtcNow, DateTime.UtcNow);
 }

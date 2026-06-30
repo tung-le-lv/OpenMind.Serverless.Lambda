@@ -3,7 +3,7 @@ using Order.Api.Domain.Repositories;
 
 namespace Order.Api.Features.DeleteOrder;
 
-public class DeleteOrderHandler(IOrderRepository orderRepository)
+public class DeleteOrderCommandHandler(IOrderRepository orderRepository)
     : IRequestHandler<DeleteOrderCommand, DeleteOrderResult>
 {
     public async Task<DeleteOrderResult> Handle(DeleteOrderCommand request, CancellationToken cancellationToken)

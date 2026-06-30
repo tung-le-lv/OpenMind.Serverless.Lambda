@@ -1,7 +1,6 @@
 using FluentAssertions;
 using Order.Api.Domain.Entities;
 using Order.Api.Domain.Enums;
-using Order.Api.Domain.ValueObjects;
 using Xunit;
 
 namespace Order.UnitTests.Domain;
@@ -27,17 +26,6 @@ public class OrderAggregateTests
 
         act.Should().Throw<DomainException>()
             .WithMessage("Customer ID is required.");
-    }
-
-    [Fact]
-    public void Create_WithShippingAddress_ShouldSetAddress()
-    {
-        var address = Address.Create("123 Main St", "Seattle", "WA", "98101", "USA");
-
-        var order = OrderAggregate.Create("customer-123", address);
-
-        order.ShippingAddress.Should().NotBeNull();
-        order.ShippingAddress!.City.Should().Be("Seattle");
     }
 
     [Fact]

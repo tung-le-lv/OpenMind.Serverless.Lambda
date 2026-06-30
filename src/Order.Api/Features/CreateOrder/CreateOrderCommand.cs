@@ -1,12 +1,10 @@
 ﻿using MediatR;
-using Order.Api.Application.Dtos;
 
 namespace Order.Api.Features.CreateOrder;
 
 public record CreateOrderCommand(
     string CustomerId,
-    List<CreateOrderItemDto> Items,
-    AddressDto? ShippingAddress
+    List<CreateOrderItemDto> Items
 ) : IRequest<CreateOrderResult>;
 
 public record CreateOrderItemDto(

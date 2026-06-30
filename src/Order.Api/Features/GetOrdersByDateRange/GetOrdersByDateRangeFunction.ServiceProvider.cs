@@ -14,7 +14,7 @@ public partial class GetOrdersByDateRangeFunction
     {
         var services = new ServiceCollection();
         services.AddCoreServices();
-        services.AddTransient<IRequestHandler<GetOrdersByDateRangeQuery, IEnumerable<OrderDto>>, GetOrdersByDateRangeHandler>();
+        services.AddTransient<IRequestHandler<GetOrdersByDateRangeQuery, IEnumerable<OrderDto>>, GetOrdersByDateRangeQueryHandler>();
         return services.BuildServiceProvider();
     }
 }

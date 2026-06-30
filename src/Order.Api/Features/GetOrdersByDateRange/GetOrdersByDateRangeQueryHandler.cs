@@ -4,7 +4,7 @@ using Order.Api.Application.Dtos;
 
 namespace Order.Api.Features.GetOrdersByDateRange;
 
-public class GetOrdersByDateRangeHandler(IOrderRepository orderRepository)
+public class GetOrdersByDateRangeQueryHandler(IOrderRepository orderRepository)
     : IRequestHandler<GetOrdersByDateRangeQuery, IEnumerable<OrderDto>>
 {
     public async Task<IEnumerable<OrderDto>> Handle(GetOrdersByDateRangeQuery request, CancellationToken cancellationToken)

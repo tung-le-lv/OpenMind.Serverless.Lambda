@@ -5,7 +5,7 @@ using Order.Api.Domain.Repositories;
 
 namespace Order.Api.Features.UpdateOrderStatus;
 
-public class UpdateOrderStatusHandler(IOrderRepository orderRepository, IEventBus eventBus)
+public class UpdateOrderStatusCommandHandler(IOrderRepository orderRepository, IEventBus eventBus)
     : IRequestHandler<UpdateOrderStatusCommand, UpdateOrderStatusResult>
 {
     public async Task<UpdateOrderStatusResult> Handle(UpdateOrderStatusCommand request, CancellationToken cancellationToken)

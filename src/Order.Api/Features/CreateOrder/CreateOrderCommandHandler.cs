@@ -2,30 +2,17 @@ using MediatR;
 using Order.Api.Application.Interfaces;
 using Order.Api.Domain.Entities;
 using Order.Api.Domain.Repositories;
-using Order.Api.Domain.ValueObjects;
 
 namespace Order.Api.Features.CreateOrder;
 
-public class CreateOrderHandler(IOrderRepository orderRepository, IEventBus eventBus)
+public class CreateOrderCommandHandler(IOrderRepository orderRepository, IEventBus eventBus)
     : IRequestHandler<CreateOrderCommand, CreateOrderResult>
 {
     public async Task<CreateOrderResult> Handle(CreateOrderCommand request, CancellationToken cancellationToken)
     {
         try
         {
-            Address? shippingAddress = null;
-            if (request.ShippingAddress != null)
-            {
-                shippingAddress = Address.Create(
-                    request.ShippingAddress.Street,
-                    request.ShippingAddress.City,
-                    request.ShippingAddress.State,
-                    request.ShippingAddress.ZipCode,
-                    request.ShippingAddress.Country
-                );
-            }
-
-            var order = OrderAggregate.Create(request.CustomerId, shippingAddress);
+            var order = OrderAggregate.Create(request.CustomerId);
 
             foreach (var item in request.Items)
             {

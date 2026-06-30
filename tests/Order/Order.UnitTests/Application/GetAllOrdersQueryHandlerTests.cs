@@ -12,10 +12,10 @@ namespace Order.UnitTests.Application;
 public class GetAllOrdersQueryHandlerTests
 {
     private readonly Mock<IOrderRepository> _repo = new();
-    private readonly GetAllOrdersHandler _handler;
+    private readonly GetAllOrdersQueryHandler _handler;
 
     public GetAllOrdersQueryHandlerTests() =>
-        _handler = new GetAllOrdersHandler(_repo.Object);
+        _handler = new GetAllOrdersQueryHandler(_repo.Object);
 
     [Fact]
     public async Task Handle_ShouldReturnAllOrders()
@@ -44,5 +44,5 @@ public class GetAllOrdersQueryHandlerTests
     }
 
     private static OrderAggregate MakeOrder(string id, string customerId) =>
-        OrderAggregate.Reconstitute(id, customerId, [OrderItem.Reconstitute("p1", "P1", 1, 10m)], 10m, OrderStatus.Pending, null, DateTime.UtcNow, DateTime.UtcNow);
+        OrderAggregate.Reconstitute(id, customerId, [OrderItem.Reconstitute("p1", "P1", 1, 10m)], 10m, OrderStatus.Pending, DateTime.UtcNow, DateTime.UtcNow);
 }

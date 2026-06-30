@@ -14,10 +14,10 @@ public class UpdateOrderStatusCommandHandlerTests
 {
     private readonly Mock<IOrderRepository> _repo = new();
     private readonly Mock<IEventBus> _bus = new();
-    private readonly UpdateOrderStatusHandler _handler;
+    private readonly UpdateOrderStatusCommandHandler _handler;
 
     public UpdateOrderStatusCommandHandlerTests() =>
-        _handler = new UpdateOrderStatusHandler(_repo.Object, _bus.Object);
+        _handler = new UpdateOrderStatusCommandHandler(_repo.Object, _bus.Object);
 
     [Fact]
     public async Task Handle_WhenValidStatusTransition_ShouldUpdateOrderStatus()
@@ -68,5 +68,5 @@ public class UpdateOrderStatusCommandHandlerTests
     }
 
     private static OrderAggregate PendingOrder() =>
-        OrderAggregate.Reconstitute("order-1", "cust-1", [], 0m, OrderStatus.Pending, null, DateTime.UtcNow, DateTime.UtcNow);
+        OrderAggregate.Reconstitute("order-1", "cust-1", [], 0m, OrderStatus.Pending, DateTime.UtcNow, DateTime.UtcNow);
 }

@@ -9,10 +9,10 @@ namespace Order.UnitTests.Application;
 public class DeleteOrderCommandHandlerTests
 {
     private readonly Mock<IOrderRepository> _repo = new();
-    private readonly DeleteOrderHandler _handler;
+    private readonly DeleteOrderCommandHandler _handler;
 
     public DeleteOrderCommandHandlerTests() =>
-        _handler = new DeleteOrderHandler(_repo.Object);
+        _handler = new DeleteOrderCommandHandler(_repo.Object);
 
     [Fact]
     public async Task Handle_WhenOrderExists_ShouldDeleteOrderSuccessfully()

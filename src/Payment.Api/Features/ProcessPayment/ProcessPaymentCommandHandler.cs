@@ -5,7 +5,7 @@ using Payment.Api.Domain.Repositories;
 
 namespace Payment.Api.Features.ProcessPayment;
 
-public class ProcessPaymentHandler(
+public class ProcessPaymentCommandHandler(
     IPaymentRepository paymentRepository,
     IPaymentGateway paymentGateway,
     IEventBus eventBus

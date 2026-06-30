@@ -15,7 +15,7 @@ public partial class HandlePaymentProcessedFunction
         services.AddCoreServices();
         services.AddEventBus();
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
-        services.AddTransient<IRequestHandler<UpdateOrderStatusCommand, UpdateOrderStatusResult>, UpdateOrderStatusHandler>();
+        services.AddTransient<IRequestHandler<UpdateOrderStatusCommand, UpdateOrderStatusResult>, UpdateOrderStatusCommandHandler>();
         return services.BuildServiceProvider();
     }
 }

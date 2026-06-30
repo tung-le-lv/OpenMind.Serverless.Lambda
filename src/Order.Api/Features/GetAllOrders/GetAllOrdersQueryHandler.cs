@@ -4,7 +4,7 @@ using Order.Api.Application.Dtos;
 
 namespace Order.Api.Features.GetAllOrders;
 
-public class GetAllOrdersHandler(IOrderRepository orderRepository)
+public class GetAllOrdersQueryHandler(IOrderRepository orderRepository)
     : IRequestHandler<GetAllOrdersQuery, IEnumerable<OrderDto>>
 {
     public async Task<IEnumerable<OrderDto>> Handle(GetAllOrdersQuery request, CancellationToken cancellationToken)

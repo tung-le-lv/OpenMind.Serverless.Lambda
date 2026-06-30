@@ -14,13 +14,12 @@ public class OrderAggregate
     public IReadOnlyCollection<OrderItem> Items => _items.AsReadOnly();
     public Money TotalAmount { get; private set; } = Money.Zero;
     public OrderStatus Status { get; private set; } = OrderStatus.Pending;
-    public Address? ShippingAddress { get; private set; }
     public DateTime CreatedAt { get; private set; }
     public DateTime UpdatedAt { get; private set; }
 
     public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
 
-    public static OrderAggregate Create(string customerId, Address? shippingAddress = null)
+    public static OrderAggregate Create(string customerId)
     {
         if (string.IsNullOrWhiteSpace(customerId))
         {
@@ -31,7 +30,6 @@ public class OrderAggregate
         {
             Id = Guid.NewGuid().ToString(),
             CustomerId = customerId,
-            ShippingAddress = shippingAddress,
             Status = OrderStatus.Pending,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
@@ -64,7 +62,6 @@ public class OrderAggregate
         List<OrderItem> items,
         decimal totalAmount,
         OrderStatus status,
-        Address? shippingAddress,
         DateTime createdAt,
         DateTime updatedAt)
     {
@@ -78,7 +75,6 @@ public class OrderAggregate
             },
             TotalAmount = Money.FromDecimal(totalAmount),
             Status = status,
-            ShippingAddress = shippingAddress,
             CreatedAt = createdAt,
             UpdatedAt = updatedAt
         }.WithItems(items);

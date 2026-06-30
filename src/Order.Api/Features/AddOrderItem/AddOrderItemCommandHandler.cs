@@ -5,7 +5,7 @@ using Order.Api.Domain.Repositories;
 
 namespace Order.Api.Features.AddOrderItem;
 
-public class AddOrderItemHandler(IOrderRepository orderRepository, IEventBus eventBus)
+public class AddOrderItemCommandHandler(IOrderRepository orderRepository, IEventBus eventBus)
     : IRequestHandler<AddOrderItemCommand, AddOrderItemResult>
 {
     public async Task<AddOrderItemResult> Handle(AddOrderItemCommand request, CancellationToken cancellationToken)

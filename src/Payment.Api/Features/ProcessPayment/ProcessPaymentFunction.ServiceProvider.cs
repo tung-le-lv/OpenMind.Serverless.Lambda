@@ -37,7 +37,7 @@ public partial class ProcessPaymentFunction
         services.AddSingleton<IPaymentGateway, FakePaymentGateway>();
         services.AddSingleton<IEventBus, SnsEventBus>();
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(ProcessPaymentFunction).Assembly));
-        services.AddTransient<IRequestHandler<ProcessPaymentCommand, ProcessPaymentResult>, ProcessPaymentHandler>();
+        services.AddTransient<IRequestHandler<ProcessPaymentCommand, ProcessPaymentResult>, ProcessPaymentCommandHandler>();
         return services.BuildServiceProvider();
     }
 }

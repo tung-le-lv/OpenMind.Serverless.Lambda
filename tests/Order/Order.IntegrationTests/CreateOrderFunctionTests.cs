@@ -83,21 +83,4 @@ public class CreateOrderFunctionTests(OrderApiFixture fixture)
         response.StatusCode.Should().Be(400);
     }
 
-    [Fact]
-    public async Task Handler_WhenOrderIncludesShippingAddress_ShouldCreateOrderSuccessfully()
-    {
-        var request = new APIGatewayProxyRequest
-        {
-            Body = JsonSerializer.Serialize(new
-            {
-                customerId = "cust-create-3",
-                items = new[] { new { productId = "p1", productName = "Widget", quantity = 1, unitPrice = 20m } },
-                shippingAddress = new { street = "1 Main St", city = "Seattle", state = "WA", zipCode = "98101", country = "USA" }
-            }, JsonOptions)
-        };
-
-        var response = await _function.Handler(request, Context);
-
-        response.StatusCode.Should().Be(201);
-    }
 }

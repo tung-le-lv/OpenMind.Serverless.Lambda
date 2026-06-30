@@ -53,8 +53,7 @@ public class DeleteOrderFunctionTests(OrderApiFixture fixture)
     {
         var result = await fixture.Mediator.Send(new CreateOrderCommand(
             customerId,
-            [new CreateOrderItemDto("p1", "Product 1", 1, 10m)],
-            null));
+            [new CreateOrderItemDto("p1", "Product 1", 1, 10m)]));
         return result.OrderId!;
     }
 }

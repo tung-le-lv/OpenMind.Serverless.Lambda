@@ -13,7 +13,7 @@ public partial class CancelOrderFunction
         var services = new ServiceCollection();
         services.AddCoreServices();
         services.AddEventBus();
-        services.AddTransient<IRequestHandler<CancelOrderCommand, CancelOrderResult>, CancelOrderHandler>();
+        services.AddTransient<IRequestHandler<CancelOrderCommand, CancelOrderResult>, CancelOrderCommandHandler>();
         return services.BuildServiceProvider();
     }
 }

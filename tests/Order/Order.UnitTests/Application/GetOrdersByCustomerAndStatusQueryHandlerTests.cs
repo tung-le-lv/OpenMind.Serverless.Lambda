@@ -12,17 +12,17 @@ namespace Order.UnitTests.Application;
 public class GetOrdersByCustomerAndStatusQueryHandlerTests
 {
     private readonly Mock<IOrderRepository> _repo = new();
-    private readonly GetOrdersByCustomerAndStatusHandler _handler;
+    private readonly GetOrdersByCustomerAndStatusQueryHandler _handler;
 
     public GetOrdersByCustomerAndStatusQueryHandlerTests() =>
-        _handler = new GetOrdersByCustomerAndStatusHandler(_repo.Object);
+        _handler = new GetOrdersByCustomerAndStatusQueryHandler(_repo.Object);
 
     [Fact]
     public async Task Handle_WhenFilteringByStatus_ShouldReturnMatchingOrders()
     {
         var orders = new List<OrderAggregate>
         {
-            OrderAggregate.Reconstitute("o1", "cust-1", [OrderItem.Reconstitute("p1", "P1", 1, 10m)], 10m, OrderStatus.Confirmed, null, DateTime.UtcNow, DateTime.UtcNow)
+            OrderAggregate.Reconstitute("o1", "cust-1", [OrderItem.Reconstitute("p1", "P1", 1, 10m)], 10m, OrderStatus.Confirmed, DateTime.UtcNow, DateTime.UtcNow)
         };
         _repo.Setup(r => r.GetByCustomerIdAndStatusAsync("cust-1", OrderStatus.Confirmed, It.IsAny<CancellationToken>())).ReturnsAsync(orders);
 

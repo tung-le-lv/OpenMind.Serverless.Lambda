@@ -5,7 +5,7 @@ using Order.Api.Domain.Repositories;
 
 namespace Order.Api.Features.CancelOrder;
 
-public class CancelOrderHandler(IOrderRepository orderRepository, IEventBus eventBus)
+public class CancelOrderCommandHandler(IOrderRepository orderRepository, IEventBus eventBus)
     : IRequestHandler<CancelOrderCommand, CancelOrderResult>
 {
     public async Task<CancelOrderResult> Handle(CancelOrderCommand request, CancellationToken cancellationToken)

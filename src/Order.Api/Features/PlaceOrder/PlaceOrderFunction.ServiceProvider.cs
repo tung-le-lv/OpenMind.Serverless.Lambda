@@ -13,7 +13,7 @@ public partial class PlaceOrderFunction
         var services = new ServiceCollection();
         services.AddCoreServices();
         services.AddEventBus();
-        services.AddTransient<IRequestHandler<PlaceOrderCommand, PlaceOrderResult>, PlaceOrderHandler>();
+        services.AddTransient<IRequestHandler<PlaceOrderCommand, PlaceOrderResult>, PlaceOrderCommandHandler>();
         return services.BuildServiceProvider();
     }
 }

@@ -14,10 +14,10 @@ public class CancelOrderCommandHandlerTests
 {
     private readonly Mock<IOrderRepository> _repo = new();
     private readonly Mock<IEventBus> _bus = new();
-    private readonly CancelOrderHandler _handler;
+    private readonly CancelOrderCommandHandler _handler;
 
     public CancelOrderCommandHandlerTests() =>
-        _handler = new CancelOrderHandler(_repo.Object, _bus.Object);
+        _handler = new CancelOrderCommandHandler(_repo.Object, _bus.Object);
 
     [Fact]
     public async Task Handle_WhenOrderIsPending_ShouldCancelSuccessfully()
@@ -68,8 +68,8 @@ public class CancelOrderCommandHandlerTests
     }
 
     private static OrderAggregate PendingOrder() =>
-        OrderAggregate.Reconstitute("order-1", "cust-1", [], 0m, OrderStatus.Pending, null, DateTime.UtcNow, DateTime.UtcNow);
+        OrderAggregate.Reconstitute("order-1", "cust-1", [], 0m, OrderStatus.Pending, DateTime.UtcNow, DateTime.UtcNow);
 
     private static OrderAggregate ShippedOrder() =>
-        OrderAggregate.Reconstitute("order-3", "cust-1", [], 0m, OrderStatus.Shipped, null, DateTime.UtcNow, DateTime.UtcNow);
+        OrderAggregate.Reconstitute("order-3", "cust-1", [], 0m, OrderStatus.Shipped, DateTime.UtcNow, DateTime.UtcNow);
 }

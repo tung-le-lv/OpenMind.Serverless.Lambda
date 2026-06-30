@@ -46,34 +46,4 @@ public class ValueObjectTests
         money1.Should().Be(money2);
         (money1 == money2).Should().BeTrue();
     }
-
-    [Fact]
-    public void Address_Create_ShouldCreateAddress()
-    {
-        var address = Address.Create("123 Main St", "Seattle", "WA", "98101", "USA");
-
-        address.Street.Should().Be("123 Main St");
-        address.City.Should().Be("Seattle");
-        address.State.Should().Be("WA");
-        address.ZipCode.Should().Be("98101");
-        address.Country.Should().Be("USA");
-    }
-
-    [Fact]
-    public void Address_Create_WithEmptyStreet_ShouldThrowException()
-    {
-        var act = () => Address.Create("", "Seattle", "WA", "98101", "USA");
-
-        act.Should().Throw<ArgumentException>()
-            .WithMessage("Street is required.*");
-    }
-
-    [Fact]
-    public void Address_Equality_ShouldWorkCorrectly()
-    {
-        var address1 = Address.Create("123 Main St", "Seattle", "WA", "98101", "USA");
-        var address2 = Address.Create("123 Main St", "Seattle", "WA", "98101", "USA");
-
-        address1.Should().Be(address2);
-    }
 }

@@ -67,7 +67,6 @@ public class GetOrdersByDateRangeFunctionTests(OrderApiFixture fixture)
     {
         await fixture.Mediator.Send(new CreateOrderCommand(
             customerId,
-            [new CreateOrderItemDto("p1", "Product 1", 1, 10m)],
-            null));
+            [new CreateOrderItemDto("p1", "Product 1", 1, 10m)]));
     }
 }

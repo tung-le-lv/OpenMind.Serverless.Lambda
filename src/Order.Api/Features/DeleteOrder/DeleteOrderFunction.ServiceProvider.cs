@@ -13,7 +13,7 @@ public partial class DeleteOrderFunction
     {
         var services = new ServiceCollection();
         services.AddCoreServices();
-        services.AddTransient<IRequestHandler<DeleteOrderCommand, DeleteOrderResult>, DeleteOrderHandler>();
+        services.AddTransient<IRequestHandler<DeleteOrderCommand, DeleteOrderResult>, DeleteOrderCommandHandler>();
         return services.BuildServiceProvider();
     }
 }

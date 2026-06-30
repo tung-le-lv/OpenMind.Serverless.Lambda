@@ -5,7 +5,6 @@ using Order.Api.Domain.Events;
 using Order.Api.Application.Interfaces;
 using Order.Api.Domain.Repositories;
 using Order.Api.Features.CreateOrder;
-using Order.Api.Application.Dtos;
 using Xunit;
 
 namespace Order.UnitTests.Application;
@@ -14,13 +13,13 @@ public class CreateOrderCommandHandlerTests
 {
     private readonly Mock<IOrderRepository> _mockRepository;
     private readonly Mock<IEventBus> _mockEventBus;
-    private readonly CreateOrderHandler _handler;
+    private readonly CreateOrderCommandHandler _handler;
 
     public CreateOrderCommandHandlerTests()
     {
         _mockRepository = new Mock<IOrderRepository>();
         _mockEventBus = new Mock<IEventBus>();
-        _handler = new CreateOrderHandler(_mockRepository.Object, _mockEventBus.Object);
+        _handler = new CreateOrderCommandHandler(_mockRepository.Object, _mockEventBus.Object);
     }
 
     [Fact]
@@ -28,8 +27,7 @@ public class CreateOrderCommandHandlerTests
     {
         var command = new CreateOrderCommand(
             CustomerId: "customer-123",
-            Items: [new CreateOrderItemDto("prod-1", "Product 1", 2, 10.00m)],
-            ShippingAddress: new AddressDto("123 Main St", "Seattle", "WA", "98101", "USA")
+            Items: [new CreateOrderItemDto("prod-1", "Product 1", 2, 10.00m)]
         );
 
         _mockRepository.Setup(r => r.AddAsync(It.IsAny<OrderAggregate>(), It.IsAny<CancellationToken>()))
@@ -47,8 +45,7 @@ public class CreateOrderCommandHandlerTests
     {
         var command = new CreateOrderCommand(
             CustomerId: "",
-            Items: [new CreateOrderItemDto("prod-1", "Product 1", 2, 10.00m)],
-            ShippingAddress: null
+            Items: [new CreateOrderItemDto("prod-1", "Product 1", 2, 10.00m)]
         );
 
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -62,8 +59,7 @@ public class CreateOrderCommandHandlerTests
     {
         var command = new CreateOrderCommand(
             CustomerId: "customer-123",
-            Items: [new CreateOrderItemDto("prod-1", "Product 1", 2, 10.00m)],
-            ShippingAddress: null
+            Items: [new CreateOrderItemDto("prod-1", "Product 1", 2, 10.00m)]
         );
 
         _mockRepository.Setup(r => r.AddAsync(It.IsAny<OrderAggregate>(), It.IsAny<CancellationToken>()))

@@ -5,7 +5,7 @@ using Order.Api.Domain.Repositories;
 
 namespace Order.Api.Features.PlaceOrder;
 
-public class PlaceOrderHandler(IOrderRepository orderRepository, IEventBus eventBus)
+public class PlaceOrderCommandHandler(IOrderRepository orderRepository, IEventBus eventBus)
     : IRequestHandler<PlaceOrderCommand, PlaceOrderResult>
 {
     public async Task<PlaceOrderResult> Handle(PlaceOrderCommand request, CancellationToken cancellationToken)

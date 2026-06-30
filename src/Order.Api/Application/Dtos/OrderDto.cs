@@ -9,7 +9,6 @@ public record OrderDto(
     decimal TotalAmount,
     string Currency,
     OrderStatus Status,
-    AddressDto? ShippingAddress,
     DateTime CreatedAt,
     DateTime UpdatedAt
 );
@@ -20,12 +19,4 @@ public record OrderItemDto(
     int Quantity,
     decimal UnitPrice,
     decimal Subtotal
-);
-
-public record AddressDto(
-    string Street,
-    string City,
-    string State,
-    string ZipCode,
-    string Country
 );

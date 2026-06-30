@@ -13,7 +13,7 @@ public partial class UpdateOrderStatusFunction
         var services = new ServiceCollection();
         services.AddCoreServices();
         services.AddEventBus();
-        services.AddTransient<IRequestHandler<UpdateOrderStatusCommand, UpdateOrderStatusResult>, UpdateOrderStatusHandler>();
+        services.AddTransient<IRequestHandler<UpdateOrderStatusCommand, UpdateOrderStatusResult>, UpdateOrderStatusCommandHandler>();
         return services.BuildServiceProvider();
     }
 }

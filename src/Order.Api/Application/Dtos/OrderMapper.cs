@@ -12,7 +12,6 @@ public static class OrderMapper
         TotalAmount: order.TotalAmount.Amount,
         Currency: order.TotalAmount.Currency,
         Status: order.Status,
-        ShippingAddress: order.ShippingAddress != null ? ToAddressDto(order.ShippingAddress) : null,
         CreatedAt: order.CreatedAt,
         UpdatedAt: order.UpdatedAt
     );
@@ -23,13 +22,5 @@ public static class OrderMapper
         Quantity: item.Quantity,
         UnitPrice: item.UnitPrice.Amount,
         Subtotal: item.Subtotal.Amount
-    );
-
-    private static AddressDto ToAddressDto(Domain.ValueObjects.Address address) => new(
-        Street: address.Street,
-        City: address.City,
-        State: address.State,
-        ZipCode: address.ZipCode,
-        Country: address.Country
     );
 }
