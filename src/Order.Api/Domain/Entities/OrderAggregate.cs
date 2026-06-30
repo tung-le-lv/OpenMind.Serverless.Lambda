@@ -41,6 +41,23 @@ public class OrderAggregate
         return order;
     }
 
+    public void Place()
+    {
+        if (Status != OrderStatus.Pending)
+        {
+            throw new DomainException("Only a pending order can be placed.");
+        }
+
+        if (!_items.Any())
+        {
+            throw new DomainException("Cannot place an empty order.");
+        }
+
+        Status = OrderStatus.Confirmed;
+        UpdateTimestamp();
+        AddDomainEvent(new OrderPlacedEvent(Id, CustomerId, TotalAmount.Amount));
+    }
+
     public static OrderAggregate Reconstitute(
         string id,
         string customerId,
@@ -145,8 +162,9 @@ public class OrderAggregate
     {
         var validTransitions = new Dictionary<OrderStatus, OrderStatus[]>
         {
-            { OrderStatus.Pending, [OrderStatus.Confirmed, OrderStatus.Cancelled] },
-            { OrderStatus.Confirmed, [OrderStatus.Processing, OrderStatus.Cancelled] },
+            { OrderStatus.Pending, [OrderStatus.Confirmed, OrderStatus.Cancelled, OrderStatus.PaymentConfirmed] },
+            { OrderStatus.PaymentConfirmed, [OrderStatus.Processing, OrderStatus.Cancelled] },
+            { OrderStatus.Confirmed, [OrderStatus.Processing, OrderStatus.Cancelled, OrderStatus.PaymentConfirmed] },
             { OrderStatus.Processing, [OrderStatus.Shipped, OrderStatus.Cancelled] },
             { OrderStatus.Shipped, [OrderStatus.Delivered] },
             { OrderStatus.Delivered, [] },

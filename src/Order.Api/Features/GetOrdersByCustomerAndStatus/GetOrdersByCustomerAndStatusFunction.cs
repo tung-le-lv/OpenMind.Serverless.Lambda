@@ -1,33 +1,18 @@
-﻿using Amazon.DynamoDBv2;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
 using AWS.Lambda.Powertools.Logging;
 using AWS.Lambda.Powertools.Tracing;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
-using Order.Api.Domain.Enums;
-using Order.Api.Domain.Repositories;
-using Order.Api.Infrastructure.Repositories;
-using Order.Api.Shared;
 using Order.Api.Application.Dtos;
+using Order.Api.Domain.Enums;
+using Order.Api.Shared;
 using Order.Api.Shared.Helpers;
 
 namespace Order.Api.Features.GetOrdersByCustomerAndStatus;
 
-public class GetOrdersByCustomerAndStatusFunction(IMediator mediator)
+public partial class GetOrdersByCustomerAndStatusFunction(IMediator mediator)
 {
-    private static readonly ServiceProvider _serviceProvider = BuildServiceProvider();
-
-    private static ServiceProvider BuildServiceProvider()
-    {
-        var services = new ServiceCollection();
-        services.AddSingleton<IAmazonDynamoDB, AmazonDynamoDBClient>();
-        services.AddSingleton<IOrderRepository, DynamoDbOrderRepository>();
-        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(DynamoDbOrderRepository).Assembly));
-        services.AddTransient<IRequestHandler<GetOrdersByCustomerAndStatusQuery, IEnumerable<OrderDto>>, GetOrdersByCustomerAndStatusHandler>();
-        return services.BuildServiceProvider();
-    }
-
     public GetOrdersByCustomerAndStatusFunction() : this(_serviceProvider.GetRequiredService<IMediator>()) { }
 
     [LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]

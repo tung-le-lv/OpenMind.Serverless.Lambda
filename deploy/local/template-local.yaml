@@ -9,8 +9,12 @@ Globals:
     Environment:
       Variables:
         ORDERS_TABLE: Orders-local
+        PAYMENTS_TABLE: Payments-local
         USE_LOCAL_EVENT_BUS: "true"
         AWS_ENDPOINT_URL: http://dynamodb-local:8000
+        LOCALSTACK_ENDPOINT: http://localstack:4566
+        ORDER_EVENTS_TOPIC_ARN: arn:aws:sns:ap-southeast-2:000000000000:order-events-topic-local
+        PAYMENT_EVENTS_TOPIC_ARN: arn:aws:sns:ap-southeast-2:000000000000:payment-events-topic-local
         AWS_ACCESS_KEY_ID: test
         AWS_SECRET_ACCESS_KEY: test
         AWS_DEFAULT_REGION: ap-southeast-2
@@ -32,6 +36,20 @@ Resources:
           Type: Api
           Properties:
             Path: /orders
+            Method: POST
+
+  PlaceOrderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      PackageType: Image
+      ImageUri: order-api-local:latest
+      ImageConfig:
+        Command: ["Order.Api::Order.Api.Features.PlaceOrder.PlaceOrderFunction::Handler"]
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /orders/{id}/place
             Method: POST
 
   GetOrderFunction:

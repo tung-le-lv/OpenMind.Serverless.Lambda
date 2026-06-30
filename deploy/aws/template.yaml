@@ -51,11 +51,121 @@ Resources:
           Projection:
             ProjectionType: ALL
 
-  # SNS Topic for Domain Events
+  # SNS Topic for Order Domain Events
   OrderEventsTopic:
     Type: AWS::SNS::Topic
     Properties:
-      TopicName: !Sub 'order-events-${Environment}'
+      TopicName: !Sub 'order-events-topic-${Environment}'
+
+  # SNS Topic for Payment Domain Events
+  PaymentEventsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub 'payment-events-topic-${Environment}'
+
+  # DynamoDB Table for Payments
+  PaymentsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub 'Payments-${Environment}'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: orderId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: OrderIdIndex
+          KeySchema:
+            - AttributeName: orderId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+
+  # SQS: Payment service consumes OrderPlaced events from Order SNS topic
+  PaymentOrderEventsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub 'payment-order-events-sqs-${Environment}'
+      VisibilityTimeout: 300
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt PaymentOrderEventsDLQ.Arn
+        maxReceiveCount: 3
+
+  PaymentOrderEventsDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub 'payment-order-events-dlq-${Environment}'
+
+  PaymentOrderEventsQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref PaymentOrderEventsQueue
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: sns.amazonaws.com
+            Action: sqs:SendMessage
+            Resource: !GetAtt PaymentOrderEventsQueue.Arn
+            Condition:
+              ArnEquals:
+                aws:SourceArn: !Ref OrderEventsTopic
+
+  PaymentOrderEventsSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref OrderEventsTopic
+      Protocol: sqs
+      Endpoint: !GetAtt PaymentOrderEventsQueue.Arn
+      FilterPolicy:
+        EventType:
+          - OrderPlaced
+
+  # SQS: Order service consumes PaymentProcessed events from Payment SNS topic
+  OrderPaymentEventsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub 'order-payment-events-sqs-${Environment}'
+      VisibilityTimeout: 300
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt OrderPaymentEventsDLQ.Arn
+        maxReceiveCount: 3
+
+  OrderPaymentEventsDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub 'order-payment-events-dlq-${Environment}'
+
+  OrderPaymentEventsQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref OrderPaymentEventsQueue
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: sns.amazonaws.com
+            Action: sqs:SendMessage
+            Resource: !GetAtt OrderPaymentEventsQueue.Arn
+            Condition:
+              ArnEquals:
+                aws:SourceArn: !Ref PaymentEventsTopic
+
+  OrderPaymentEventsSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref PaymentEventsTopic
+      Protocol: sqs
+      Endpoint: !GetAtt OrderPaymentEventsQueue.Arn
+      FilterPolicy:
+        EventType:
+          - PaymentProcessed
 
   # Lambda Functions
   CreateOrderFunction:
@@ -67,14 +177,31 @@ Resources:
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref OrdersTable
-        - SNSPublishMessagePolicy:
-            TopicName: !GetAtt OrderEventsTopic.TopicName
       Events:
         CreateOrder:
           Type: Api
           Properties:
             RestApiId: !Ref OrderApi
             Path: /orders
+            Method: POST
+
+  PlaceOrderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'Order-PlaceOrder-${Environment}'
+      Handler: Order.Api::Order.Api.Features.PlaceOrder.PlaceOrderFunction::Handler
+      CodeUri: ./src/Order.Api/
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref OrdersTable
+        - SNSPublishMessagePolicy:
+            TopicName: !GetAtt OrderEventsTopic.TopicName
+      Events:
+        PlaceOrder:
+          Type: Api
+          Properties:
+            RestApiId: !Ref OrderApi
+            Path: /orders/{id}/place
             Method: POST
 
   GetOrderFunction:
@@ -202,6 +329,58 @@ Resources:
             Path: /orders/{id}
             Method: DELETE
 
+  # Payment Lambda - triggered by SQS (payment-order-events-sqs)
+  ProcessPaymentFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'Payment-ProcessPayment-${Environment}'
+      Handler: Payment.Api::Payment.Api.Features.ProcessPayment.ProcessPaymentFunction::Handler
+      CodeUri: ./src/Payment.Api/
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PaymentsTable
+        - SNSPublishMessagePolicy:
+            TopicName: !GetAtt PaymentEventsTopic.TopicName
+        - SQSPollerPolicy:
+            QueueName: !GetAtt PaymentOrderEventsQueue.QueueName
+      Environment:
+        Variables:
+          PAYMENTS_TABLE: !Ref PaymentsTable
+          PAYMENT_EVENTS_TOPIC_ARN: !Ref PaymentEventsTopic
+          POWERTOOLS_SERVICE_NAME: PaymentService
+          POWERTOOLS_METRICS_NAMESPACE: PaymentService
+      Events:
+        SQSTrigger:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt PaymentOrderEventsQueue.Arn
+            BatchSize: 1
+            FunctionResponseTypes:
+              - ReportBatchItemFailures
+
+  # Order Lambda - triggered by SQS (order-payment-events-sqs), updates order to PaymentConfirmed
+  HandlePaymentProcessedFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'Order-HandlePaymentProcessed-${Environment}'
+      Handler: Order.Api::Order.Api.Features.HandlePaymentProcessed.HandlePaymentProcessedFunction::Handler
+      CodeUri: ./src/Order.Api/
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref OrdersTable
+        - SNSPublishMessagePolicy:
+            TopicName: !GetAtt OrderEventsTopic.TopicName
+        - SQSPollerPolicy:
+            QueueName: !GetAtt OrderPaymentEventsQueue.QueueName
+      Events:
+        SQSTrigger:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt OrderPaymentEventsQueue.Arn
+            BatchSize: 1
+            FunctionResponseTypes:
+              - ReportBatchItemFailures
+
   # API Gateway
   OrderApi:
     Type: AWS::Serverless::Api
@@ -225,4 +404,20 @@ Outputs:
   OrderEventsTopicArn:
     Description: SNS Topic ARN for order events
     Value: !Ref OrderEventsTopic
+
+  PaymentEventsTopicArn:
+    Description: SNS Topic ARN for payment events
+    Value: !Ref PaymentEventsTopic
+
+  PaymentsTableName:
+    Description: DynamoDB Payments table name
+    Value: !Ref PaymentsTable
+
+  PaymentOrderEventsQueueUrl:
+    Description: SQS Queue URL for payment service consuming order events
+    Value: !Ref PaymentOrderEventsQueue
+
+  OrderPaymentEventsQueueUrl:
+    Description: SQS Queue URL for order service consuming payment events
+    Value: !Ref OrderPaymentEventsQueue
 

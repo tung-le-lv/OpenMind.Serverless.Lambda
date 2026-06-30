@@ -1,44 +1,17 @@
-﻿using Amazon.DynamoDBv2;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
-using Amazon.SimpleNotificationService;
 using AWS.Lambda.Powertools.Logging;
 using AWS.Lambda.Powertools.Metrics;
 using AWS.Lambda.Powertools.Tracing;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
-using Order.Api.Application.Interfaces;
-using Order.Api.Domain.Repositories;
-using Order.Api.Infrastructure.EventBus;
-using Order.Api.Infrastructure.Repositories;
 using Order.Api.Shared;
 using Order.Api.Shared.Helpers;
 
 namespace Order.Api.Features.CancelOrder;
 
-public class CancelOrderFunction(IMediator mediator)
+public partial class CancelOrderFunction(IMediator mediator)
 {
-    private static readonly ServiceProvider _serviceProvider = BuildServiceProvider();
-
-    private static ServiceProvider BuildServiceProvider()
-    {
-        var services = new ServiceCollection();
-        services.AddSingleton<IAmazonDynamoDB, AmazonDynamoDBClient>();
-        services.AddSingleton<IOrderRepository, DynamoDbOrderRepository>();
-        if (Environment.GetEnvironmentVariable("USE_LOCAL_EVENT_BUS") == "true")
-        {
-            services.AddSingleton<IEventBus, InMemoryEventBus>();
-        }
-        else
-        {
-            services.AddSingleton<IAmazonSimpleNotificationService, AmazonSimpleNotificationServiceClient>();
-            services.AddSingleton<IEventBus, SnsEventBus>();
-        }
-        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(DynamoDbOrderRepository).Assembly));
-        services.AddTransient<IRequestHandler<CancelOrderCommand, CancelOrderResult>, CancelOrderHandler>();
-        return services.BuildServiceProvider();
-    }
-
     public CancelOrderFunction() : this(_serviceProvider.GetRequiredService<IMediator>()) { }
 
     [LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
@@ -55,14 +28,13 @@ public class CancelOrderFunction(IMediator mediator)
                 return ApiResponseHelper.CreateResponse(400, ApiResponse<string>.ErrorResponse("Order ID is required."));
             }
 
-            Logger.LogInformation("Cancelling order {OrderId}", orderId);
+            Logger.LogInformation($"Cancelling order {orderId}");
 
             var result = await mediator.Send(new CancelOrderCommand(orderId));
 
             if (!result.Success)
             {
-                var statusCode = result.Message?.Contains("not found") == true ? 404 : 400;
-                return ApiResponseHelper.CreateResponse(statusCode, ApiResponse<string>.ErrorResponse(result.Message ?? "Failed to cancel order.", result.Errors));
+                return ApiResponseHelper.CreateResponse(400, ApiResponse<string>.ErrorResponse(result.Message ?? "Failed to cancel order.", result.Errors));
             }
 
             Metrics.AddMetric("OrderCancelled", 1, MetricUnit.Count);
@@ -70,7 +42,7 @@ public class CancelOrderFunction(IMediator mediator)
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Error cancelling order {OrderId}", request.PathParameters?["id"]);
+            Logger.LogError(ex, "Error cancelling order");
             return ApiResponseHelper.CreateResponse(500, ApiResponse<string>.ErrorResponse("Internal server error.", [ex.Message]));
         }
     }
