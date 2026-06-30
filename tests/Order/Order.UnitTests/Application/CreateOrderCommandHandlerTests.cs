@@ -20,7 +20,7 @@ public class CreateOrderCommandHandlerTests
     {
         _mockRepository = new Mock<IOrderRepository>();
         _mockEventBus = new Mock<IEventBus>();
-        _handler = new CreateOrderHandler(_mockRepository.Object, _mockEventBus.Object);
+        _handler = new CreateOrderHandler(_mockRepository.Object);
     }
 
     [Fact]

@@ -45,7 +45,6 @@ public class OrderApiFixture : IAsyncLifetime
         var services = new ServiceCollection();
         services.AddSingleton<IAmazonDynamoDB>(dynamoDbClient);
         services.AddSingleton<IOrderRepository, DynamoDbOrderRepository>();
-        services.AddSingleton<IEventBus, InMemoryEventBus>();
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(DynamoDbOrderRepository).Assembly));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
         services.AddTransient<IValidator<CreateOrderCommand>, CreateOrderValidator>();

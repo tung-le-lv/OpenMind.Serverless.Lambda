@@ -4,6 +4,7 @@ using Amazon.Lambda.SQSEvents;
 using AWS.Lambda.Powertools.Logging;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
+using Payment.Api.Infrastructure.EventBus;
 
 namespace Payment.Api.Features.ProcessPayment;
 
@@ -57,8 +58,4 @@ public partial class ProcessPaymentFunction(IMediator mediator)
     }
 
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
-
-    private record SnsNotification(string Message);
-    private record EventEnvelope(string EventType, JsonElement Data);
-    private record OrderPlacedData(string OrderId, string CustomerId, decimal TotalAmount);
 }
