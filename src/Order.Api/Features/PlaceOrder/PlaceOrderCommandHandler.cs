@@ -1,5 +1,6 @@
 using MediatR;
 using Order.Api.Application.Interfaces;
+using Order.Api.Domain;
 using Order.Api.Domain.Entities;
 using Order.Api.Domain.Repositories;
 

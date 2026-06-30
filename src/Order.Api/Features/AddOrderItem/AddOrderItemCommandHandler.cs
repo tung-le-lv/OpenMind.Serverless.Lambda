@@ -1,6 +1,7 @@
 ﻿using MediatR;
 using Order.Api.Domain.Entities;
 using Order.Api.Application.Interfaces;
+using Order.Api.Domain;
 using Order.Api.Domain.Repositories;
 
 namespace Order.Api.Features.AddOrderItem;

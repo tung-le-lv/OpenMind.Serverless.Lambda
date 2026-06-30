@@ -189,5 +189,3 @@ public class OrderAggregate
         _domainEvents.Add(domainEvent);
     }
 }
-
-public class DomainException(string message) : Exception(message);

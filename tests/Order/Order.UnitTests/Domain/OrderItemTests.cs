@@ -1,5 +1,5 @@
 using FluentAssertions;
-using Order.Api.Domain.Entities;
+using Order.Api.Domain;
 using Order.Api.Domain.ValueObjects;
 using Xunit;
 
@@ -25,8 +25,7 @@ public class OrderItemTests
     {
         var act = () => OrderItem.Create("", "Product 1", 2, 10.00m);
 
-        act.Should().Throw<DomainException>()
-            .WithMessage("Product ID is required.");
+        act.Should().Throw<DomainException>().WithMessage("Product ID is required.");
     }
 
     [Fact]
@@ -34,8 +33,7 @@ public class OrderItemTests
     {
         var act = () => OrderItem.Create("prod-1", "Product 1", 0, 10.00m);
 
-        act.Should().Throw<DomainException>()
-            .WithMessage("Quantity must be greater than zero.");
+        act.Should().Throw<DomainException>().WithMessage("Quantity must be greater than zero.");
     }
 
     [Fact]
@@ -43,8 +41,7 @@ public class OrderItemTests
     {
         var act = () => OrderItem.Create("prod-1", "Product 1", 1, -10.00m);
 
-        act.Should().Throw<DomainException>()
-            .WithMessage("Unit price cannot be negative.");
+        act.Should().Throw<DomainException>().WithMessage("Unit price cannot be negative.");
     }
 
     [Fact]
@@ -75,7 +72,6 @@ public class OrderItemTests
 
         var act = () => item.DecreaseQuantity(3);
 
-        act.Should().Throw<DomainException>()
-            .WithMessage("Quantity cannot be less than 1.");
+        act.Should().Throw<DomainException>().WithMessage("Quantity cannot be less than 1.");
     }
 }

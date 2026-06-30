@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Order.Api.Domain;
 using Order.Api.Domain.Entities;
 using Order.Api.Domain.Enums;
 using Xunit;
@@ -23,9 +24,7 @@ public class OrderAggregateTests
     public void Create_WithEmptyCustomerId_ShouldThrowException()
     {
         var act = () => OrderAggregate.Create("");
-
-        act.Should().Throw<DomainException>()
-            .WithMessage("Customer ID is required.");
+        act.Should().Throw<DomainException>().WithMessage("Customer ID is required.");
     }
 
     [Fact]
@@ -69,8 +68,7 @@ public class OrderAggregateTests
 
         var act = () => order.UpdateStatus(OrderStatus.Shipped);
 
-        act.Should().Throw<DomainException>()
-            .WithMessage("Invalid status transition from Pending to Shipped.");
+        act.Should().Throw<DomainException>().WithMessage("Invalid status transition from Pending to Shipped.");
     }
 
     [Fact]
