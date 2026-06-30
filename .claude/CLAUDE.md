@@ -1,0 +1,3 @@
+- Always use primary constructor.
+- Private methods should not be placed in front of the public ones.
+- Always apply embrace style (IDE0011).

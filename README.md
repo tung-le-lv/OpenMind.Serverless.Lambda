@@ -1,3 +1,75 @@
+## Serverless Architecture and Function As A Service
+
+### Serverless Architecture vs Function as a Service
+
+**Serverless Architecture** is a broader design philosophy: you build systems entirely from managed cloud services, where you never provision or operate infrastructure yourself. The cloud provider handles servers, OS patching, scaling, and availability. You pay only for what you consume — idle resources cost nothing.
+
+Serverless is not a single technology. It is a combination of managed services working together:
+
+```
+Client → API Gateway → Lambda (compute)
+                         ↓
+                      DynamoDB (database)       ← all serverless
+                      SNS / SQS (messaging)
+                      S3 (storage)
+                      EventBridge (events)
+```
+
+**Function as a Service (FaaS)** is the *compute* layer of a serverless architecture. It is one specific piece — the part that runs your code. AWS Lambda is the FaaS offering on AWS. You deploy a function, define what triggers it, and the platform runs it on demand in a short-lived container.
+
+The relationship is:
+> Serverless Architecture **contains** FaaS. FaaS **is not** the whole of serverless.
+
+**Key constraints of FaaS to design around:**
+- **Stateless** — no in-memory state survives between invocations. Persist everything to DynamoDB, S3, or ElastiCache.
+- **Cold starts** — the first invocation after idle spins up a new container (~200–500 ms for .NET). Subsequent calls reuse the warm container.
+- **Short-lived** — AWS Lambda enforces a 15-minute maximum timeout. Long-running work (report generation, bulk imports) belongs in ECS Tasks or Step Functions.
+- **Event-driven** — functions are triggered by something: an HTTP request, a queue message, a schedule, a file upload. There is no "always-on" process.
+
+### AWS Services for Serverless Architecture
+
+| Layer | AWS Service | Why it fits |
+|---|---|---|
+| **Compute** | Lambda | Runs your functions on demand; scales from zero to thousands of concurrent executions automatically |
+| **HTTP API** | API Gateway | Managed HTTP/REST/WebSocket endpoint; routes requests to Lambda without running a web server |
+| **Async messaging** | SNS | Fan-out pub/sub; one event (e.g. `OrderCreated`) notifies multiple downstream Lambdas in parallel |
+| **Queue / buffering** | SQS | Decouples producers from consumers; Lambda polls the queue and processes messages in batches; retries on failure |
+| **Event routing** | EventBridge | Rule-based routing of domain events between services; supports cron schedules (e.g. expire abandoned carts nightly) |
+| **Database** | DynamoDB | Fully managed NoSQL; scales with Lambda automatically; no connection pool to manage (critical for FaaS) |
+| **File storage** | S3 | Object storage for uploads, exports, and static assets; triggers Lambda on `PutObject` events |
+| **Orchestration** | Step Functions | Coordinates multi-step workflows (e.g. order → payment → fulfillment → notification) with retries, timeouts, and branching |
+| **Auth** | Cognito | Managed user pools and JWT issuance; API Gateway validates tokens before invoking Lambda |
+| **Secrets** | Secrets Manager / SSM Parameter Store | Injects credentials and config into Lambda at runtime without hardcoding them |
+| **Observability** | CloudWatch + X-Ray | Centralized logs, metrics, and distributed tracing across all Lambda invocations |
+
+### How to organize your code
+
+**One repository per bounded context.** A bounded context is a self-contained business domain with its own language, data model, and team ownership. Splitting by bounded context keeps each repo focused and independently deployable.
+
+In an e-commerce platform:
+
+```
+order-service/          ← order lifecycle, line items, status
+catalog-service/        ← product listings, inventory levels, pricing
+customer-service/       ← accounts, addresses, loyalty points
+payment-service/        ← charge, refund, payment method management
+notification-service/   ← email, SMS, push notifications
+```
+
+**Within a repo, one function per use case.** Each AWS Lambda function corresponds to one business operation. In this repo each feature folder under `Features/` maps to a separately deployable Lambda:
+
+```
+Features/
+  CreateOrder/       → CreateOrderFunction  (POST /orders)
+  AddOrderItem/      → AddOrderItemFunction (POST /orders/{id}/items)
+  CancelOrder/       → CancelOrderFunction  (DELETE /orders/{id})
+  GetOrder/          → GetOrderFunction     (GET /orders/{id})
+  UpdateOrderStatus/ → UpdateOrderStatusFunction
+```
+
+**Shared infrastructure lives at the repo level.** DynamoDB tables, SNS topics, SQS queues, and IAM roles are declared once in the SAM template (`deploy/aws/template.yaml`) and shared across all functions in the bounded context. Cross-context communication happens exclusively through events (SNS/EventBridge), never direct DB access.
+
+
 ## Local Development
 
 ### Start DynamoDB Local
