@@ -97,11 +97,11 @@ services:
       - openmind-local
 
   localstack:
-    image: localstack/localstack:latest
+    image: localstack/localstack:3
     ports:
       - "4566:4566"
     environment:
-      - SERVICES=sns,sqs,lambda
+      - SERVICES=sns,sqs,lambda,apigateway,logs
       - DEFAULT_REGION=ap-southeast-2
       - AWS_DEFAULT_REGION=ap-southeast-2
       - LAMBDA_DOCKER_NETWORK=openmind-local
@@ -119,6 +119,8 @@ services:
       AWS_ACCESS_KEY_ID: test
       AWS_SECRET_ACCESS_KEY: test
       AWS_DEFAULT_REGION: ap-southeast-2
+    volumes:
+      - ./publish:/publish:ro
     entrypoint: ["/bin/sh"]
     command:
       - "-c"
@@ -151,6 +153,11 @@ services:
           --notification-endpoint $$ORDER_PAYMENT_QUEUE_ARN \
           --attributes '{"FilterPolicy":"{\"EventType\":[\"PaymentProcessed\"]}"}'
 
+        until [ -f /publish/payment-api.zip ] && [ -f /publish/order-api.zip ]; do
+          echo 'Waiting for Lambda ZIPs (run build.ps1 first)...'
+          sleep 3
+        done
+
         until aws --endpoint-url=$$ENDPOINT lambda list-functions 2>/dev/null; do
           echo 'Waiting for LocalStack Lambda...'
           sleep 2
@@ -158,10 +165,12 @@ services:
 
         aws --endpoint-url=$$ENDPOINT lambda create-function \
           --function-name ProcessPaymentFunction \
-          --package-type Image \
-          --code ImageUri=payment-api-local:latest \
+          --package-type Zip \
+          --runtime provided.al2023 \
+          --zip-file fileb:///publish/payment-api.zip \
+          --handler bootstrap \
           --role arn:aws:iam::000000000000:role/lambda-role \
-          --environment "Variables={LAMBDA_HANDLER=ProcessPayment,PAYMENTS_TABLE=Payments-local,PAYMENT_EVENTS_TOPIC_ARN=$$PAYMENT_TOPIC_ARN,USE_LOCAL_EVENT_BUS=true,LOCALSTACK_ENDPOINT=http://localstack:4566,AWS_ENDPOINT_URL=http://dynamodb-local:8000,AWS_ACCESS_KEY_ID=test,AWS_SECRET_ACCESS_KEY=test,AWS_DEFAULT_REGION=ap-southeast-2}"
+          --environment "Variables={LAMBDA_HANDLER=ProcessPayment,DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1,PAYMENTS_TABLE=Payments-local,PAYMENT_EVENTS_TOPIC_ARN=$$PAYMENT_TOPIC_ARN,USE_LOCAL_EVENT_BUS=true,LOCALSTACK_ENDPOINT=http://localstack:4566,AWS_ENDPOINT_URL=http://dynamodb-local:8000,AWS_ACCESS_KEY_ID=test,AWS_SECRET_ACCESS_KEY=test,AWS_DEFAULT_REGION=ap-southeast-2}"
 
         aws --endpoint-url=$$ENDPOINT lambda create-event-source-mapping \
           --function-name ProcessPaymentFunction \
@@ -171,10 +180,12 @@ services:
 
         aws --endpoint-url=$$ENDPOINT lambda create-function \
           --function-name HandlePaymentProcessedFunction \
-          --package-type Image \
-          --code ImageUri=order-api-local:latest \
+          --package-type Zip \
+          --runtime provided.al2023 \
+          --zip-file fileb:///publish/order-api.zip \
+          --handler bootstrap \
           --role arn:aws:iam::000000000000:role/lambda-role \
-          --environment "Variables={LAMBDA_HANDLER=HandlePaymentProcessed,ORDERS_TABLE=Orders-local,ORDER_EVENTS_TOPIC_ARN=$$ORDER_TOPIC_ARN,USE_LOCAL_EVENT_BUS=true,LOCALSTACK_ENDPOINT=http://localstack:4566,AWS_ENDPOINT_URL=http://dynamodb-local:8000,AWS_ACCESS_KEY_ID=test,AWS_SECRET_ACCESS_KEY=test,AWS_DEFAULT_REGION=ap-southeast-2}"
+          --environment "Variables={LAMBDA_HANDLER=HandlePaymentProcessed,DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1,ORDERS_TABLE=Orders-local,ORDER_EVENTS_TOPIC_ARN=$$ORDER_TOPIC_ARN,USE_LOCAL_EVENT_BUS=true,LOCALSTACK_ENDPOINT=http://localstack:4566,AWS_ENDPOINT_URL=http://dynamodb-local:8000,AWS_ACCESS_KEY_ID=test,AWS_SECRET_ACCESS_KEY=test,AWS_DEFAULT_REGION=ap-southeast-2}"
 
         aws --endpoint-url=$$ENDPOINT lambda create-event-source-mapping \
           --function-name HandlePaymentProcessedFunction \
@@ -185,6 +196,150 @@ services:
         echo 'LocalStack setup complete.'
         echo "  order-events-topic-local ARN:   $$ORDER_TOPIC_ARN"
         echo "  payment-events-topic-local ARN: $$PAYMENT_TOPIC_ARN"
+    networks:
+      - openmind-local
+
+  localstack-http-setup:
+    image: amazon/aws-cli
+    depends_on:
+      localstack-setup:
+        condition: service_completed_successfully
+    environment:
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      AWS_DEFAULT_REGION: ap-southeast-2
+    volumes:
+      - ./publish:/publish:ro
+    entrypoint: ["/bin/sh"]
+    command:
+      - "-c"
+      - |
+        ENDPOINT=http://localstack:4566
+
+        ORDER_TOPIC_ARN=$$(aws --endpoint-url=$$ENDPOINT sns list-topics \
+          --query 'Topics[?contains(TopicArn,`order-events`)].TopicArn' --output text)
+
+        for HANDLER in CreateOrder GetOrder GetAllOrders GetOrdersByCustomer GetOrdersByCustomerAndStatus GetOrdersByDateRange UpdateOrderStatus CancelOrder AddOrderItem DeleteOrder PlaceOrder; do
+          aws --endpoint-url=$$ENDPOINT lambda create-function \
+            --function-name $${HANDLER}Function \
+            --package-type Zip \
+            --runtime provided.al2023 \
+            --zip-file fileb:///publish/order-api.zip \
+            --handler bootstrap \
+            --role arn:aws:iam::000000000000:role/lambda-role \
+            --environment "Variables={LAMBDA_HANDLER=$${HANDLER},DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1,ORDERS_TABLE=Orders-local,ORDER_EVENTS_TOPIC_ARN=$$ORDER_TOPIC_ARN,USE_LOCAL_EVENT_BUS=true,LOCALSTACK_ENDPOINT=http://localstack:4566,AWS_ENDPOINT_URL=http://dynamodb-local:8000,AWS_ACCESS_KEY_ID=test,AWS_SECRET_ACCESS_KEY=test,AWS_DEFAULT_REGION=ap-southeast-2}"
+        done
+
+        API_ID=$$(aws --endpoint-url=$$ENDPOINT apigateway create-rest-api \
+          --name orders-api --query id --output text)
+        ROOT_ID=$$(aws --endpoint-url=$$ENDPOINT apigateway get-resources \
+          --rest-api-id $$API_ID --query 'items[?path==`/`].id' --output text)
+
+        # /orders
+        ORDERS_ID=$$(aws --endpoint-url=$$ENDPOINT apigateway create-resource \
+          --rest-api-id $$API_ID --parent-id $$ROOT_ID --path-part orders --query id --output text)
+        aws --endpoint-url=$$ENDPOINT apigateway put-method --rest-api-id $$API_ID --resource-id $$ORDERS_ID --http-method POST --authorization-type NONE
+        aws --endpoint-url=$$ENDPOINT apigateway put-integration --rest-api-id $$API_ID --resource-id $$ORDERS_ID --http-method POST --type AWS_PROXY --integration-http-method POST \
+          --uri "arn:aws:apigateway:ap-southeast-2:lambda:path/2015-03-31/functions/arn:aws:lambda:ap-southeast-2:000000000000:function:CreateOrderFunction/invocations"
+        aws --endpoint-url=$$ENDPOINT apigateway put-method --rest-api-id $$API_ID --resource-id $$ORDERS_ID --http-method GET --authorization-type NONE
+        aws --endpoint-url=$$ENDPOINT apigateway put-integration --rest-api-id $$API_ID --resource-id $$ORDERS_ID --http-method GET --type AWS_PROXY --integration-http-method POST \
+          --uri "arn:aws:apigateway:ap-southeast-2:lambda:path/2015-03-31/functions/arn:aws:lambda:ap-southeast-2:000000000000:function:GetAllOrdersFunction/invocations"
+
+        # /orders/filter
+        FILTER_ID=$$(aws --endpoint-url=$$ENDPOINT apigateway create-resource \
+          --rest-api-id $$API_ID --parent-id $$ORDERS_ID --path-part filter --query id --output text)
+        aws --endpoint-url=$$ENDPOINT apigateway put-method --rest-api-id $$API_ID --resource-id $$FILTER_ID --http-method GET --authorization-type NONE
+        aws --endpoint-url=$$ENDPOINT apigateway put-integration --rest-api-id $$API_ID --resource-id $$FILTER_ID --http-method GET --type AWS_PROXY --integration-http-method POST \
+          --uri "arn:aws:apigateway:ap-southeast-2:lambda:path/2015-03-31/functions/arn:aws:lambda:ap-southeast-2:000000000000:function:GetOrdersByDateRangeFunction/invocations"
+
+        # /orders/customer/{customerId}
+        CUSTOMER_ID=$$(aws --endpoint-url=$$ENDPOINT apigateway create-resource \
+          --rest-api-id $$API_ID --parent-id $$ORDERS_ID --path-part customer --query id --output text)
+        CUSTOMER_PARAM_ID=$$(aws --endpoint-url=$$ENDPOINT apigateway create-resource \
+          --rest-api-id $$API_ID --parent-id $$CUSTOMER_ID --path-part '{customerId}' --query id --output text)
+        aws --endpoint-url=$$ENDPOINT apigateway put-method --rest-api-id $$API_ID --resource-id $$CUSTOMER_PARAM_ID --http-method GET --authorization-type NONE
+        aws --endpoint-url=$$ENDPOINT apigateway put-integration --rest-api-id $$API_ID --resource-id $$CUSTOMER_PARAM_ID --http-method GET --type AWS_PROXY --integration-http-method POST \
+          --uri "arn:aws:apigateway:ap-southeast-2:lambda:path/2015-03-31/functions/arn:aws:lambda:ap-southeast-2:000000000000:function:GetOrdersByCustomerFunction/invocations"
+
+        # /orders/customer/{customerId}/status/{status}
+        CUST_STATUS_ID=$$(aws --endpoint-url=$$ENDPOINT apigateway create-resource \
+          --rest-api-id $$API_ID --parent-id $$CUSTOMER_PARAM_ID --path-part status --query id --output text)
+        CUST_STATUS_PARAM_ID=$$(aws --endpoint-url=$$ENDPOINT apigateway create-resource \
+          --rest-api-id $$API_ID --parent-id $$CUST_STATUS_ID --path-part '{status}' --query id --output text)
+        aws --endpoint-url=$$ENDPOINT apigateway put-method --rest-api-id $$API_ID --resource-id $$CUST_STATUS_PARAM_ID --http-method GET --authorization-type NONE
+        aws --endpoint-url=$$ENDPOINT apigateway put-integration --rest-api-id $$API_ID --resource-id $$CUST_STATUS_PARAM_ID --http-method GET --type AWS_PROXY --integration-http-method POST \
+          --uri "arn:aws:apigateway:ap-southeast-2:lambda:path/2015-03-31/functions/arn:aws:lambda:ap-southeast-2:000000000000:function:GetOrdersByCustomerAndStatusFunction/invocations"
+
+        # /orders/{id}
+        ORDER_PARAM_ID=$$(aws --endpoint-url=$$ENDPOINT apigateway create-resource \
+          --rest-api-id $$API_ID --parent-id $$ORDERS_ID --path-part '{id}' --query id --output text)
+        aws --endpoint-url=$$ENDPOINT apigateway put-method --rest-api-id $$API_ID --resource-id $$ORDER_PARAM_ID --http-method GET --authorization-type NONE
+        aws --endpoint-url=$$ENDPOINT apigateway put-integration --rest-api-id $$API_ID --resource-id $$ORDER_PARAM_ID --http-method GET --type AWS_PROXY --integration-http-method POST \
+          --uri "arn:aws:apigateway:ap-southeast-2:lambda:path/2015-03-31/functions/arn:aws:lambda:ap-southeast-2:000000000000:function:GetOrderFunction/invocations"
+        aws --endpoint-url=$$ENDPOINT apigateway put-method --rest-api-id $$API_ID --resource-id $$ORDER_PARAM_ID --http-method DELETE --authorization-type NONE
+        aws --endpoint-url=$$ENDPOINT apigateway put-integration --rest-api-id $$API_ID --resource-id $$ORDER_PARAM_ID --http-method DELETE --type AWS_PROXY --integration-http-method POST \
+          --uri "arn:aws:apigateway:ap-southeast-2:lambda:path/2015-03-31/functions/arn:aws:lambda:ap-southeast-2:000000000000:function:DeleteOrderFunction/invocations"
+
+        # /orders/{id}/place
+        PLACE_ID=$$(aws --endpoint-url=$$ENDPOINT apigateway create-resource \
+          --rest-api-id $$API_ID --parent-id $$ORDER_PARAM_ID --path-part place --query id --output text)
+        aws --endpoint-url=$$ENDPOINT apigateway put-method --rest-api-id $$API_ID --resource-id $$PLACE_ID --http-method POST --authorization-type NONE
+        aws --endpoint-url=$$ENDPOINT apigateway put-integration --rest-api-id $$API_ID --resource-id $$PLACE_ID --http-method POST --type AWS_PROXY --integration-http-method POST \
+          --uri "arn:aws:apigateway:ap-southeast-2:lambda:path/2015-03-31/functions/arn:aws:lambda:ap-southeast-2:000000000000:function:PlaceOrderFunction/invocations"
+
+        # /orders/{id}/cancel
+        CANCEL_ID=$$(aws --endpoint-url=$$ENDPOINT apigateway create-resource \
+          --rest-api-id $$API_ID --parent-id $$ORDER_PARAM_ID --path-part cancel --query id --output text)
+        aws --endpoint-url=$$ENDPOINT apigateway put-method --rest-api-id $$API_ID --resource-id $$CANCEL_ID --http-method POST --authorization-type NONE
+        aws --endpoint-url=$$ENDPOINT apigateway put-integration --rest-api-id $$API_ID --resource-id $$CANCEL_ID --http-method POST --type AWS_PROXY --integration-http-method POST \
+          --uri "arn:aws:apigateway:ap-southeast-2:lambda:path/2015-03-31/functions/arn:aws:lambda:ap-southeast-2:000000000000:function:CancelOrderFunction/invocations"
+
+        # /orders/{id}/status
+        STATUS_ID=$$(aws --endpoint-url=$$ENDPOINT apigateway create-resource \
+          --rest-api-id $$API_ID --parent-id $$ORDER_PARAM_ID --path-part status --query id --output text)
+        aws --endpoint-url=$$ENDPOINT apigateway put-method --rest-api-id $$API_ID --resource-id $$STATUS_ID --http-method PUT --authorization-type NONE
+        aws --endpoint-url=$$ENDPOINT apigateway put-integration --rest-api-id $$API_ID --resource-id $$STATUS_ID --http-method PUT --type AWS_PROXY --integration-http-method POST \
+          --uri "arn:aws:apigateway:ap-southeast-2:lambda:path/2015-03-31/functions/arn:aws:lambda:ap-southeast-2:000000000000:function:UpdateOrderStatusFunction/invocations"
+
+        # /orders/{id}/items
+        ITEMS_ID=$$(aws --endpoint-url=$$ENDPOINT apigateway create-resource \
+          --rest-api-id $$API_ID --parent-id $$ORDER_PARAM_ID --path-part items --query id --output text)
+        aws --endpoint-url=$$ENDPOINT apigateway put-method --rest-api-id $$API_ID --resource-id $$ITEMS_ID --http-method POST --authorization-type NONE
+        aws --endpoint-url=$$ENDPOINT apigateway put-integration --rest-api-id $$API_ID --resource-id $$ITEMS_ID --http-method POST --type AWS_PROXY --integration-http-method POST \
+          --uri "arn:aws:apigateway:ap-southeast-2:lambda:path/2015-03-31/functions/arn:aws:lambda:ap-southeast-2:000000000000:function:AddOrderItemFunction/invocations"
+
+        aws --endpoint-url=$$ENDPOINT apigateway create-deployment \
+          --rest-api-id $$API_ID --stage-name local
+
+        echo 'LocalStack HTTP API setup complete.'
+        echo "  Base URL: http://localhost:4566/restapis/$$API_ID/local/_user_request_"
+    networks:
+      - openmind-local
+
+  localstack-logs:
+    image: amazon/aws-cli
+    depends_on:
+      - localstack-setup
+    environment:
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      AWS_DEFAULT_REGION: ap-southeast-2
+    entrypoint: ["/bin/sh"]
+    command:
+      - "-c"
+      - |
+        ENDPOINT=http://localstack:4566
+
+        until aws --endpoint-url=$$ENDPOINT logs describe-log-groups --log-group-name-prefix /aws/lambda 2>/dev/null | grep -q ProcessPaymentFunction; do
+          echo 'Waiting for Lambda log groups...'
+          sleep 3
+        done
+
+        aws --endpoint-url=$$ENDPOINT logs tail /aws/lambda/ProcessPaymentFunction --follow &
+        aws --endpoint-url=$$ENDPOINT logs tail /aws/lambda/HandlePaymentProcessedFunction --follow &
+        aws --endpoint-url=$$ENDPOINT logs tail /aws/lambda/CreateOrderFunction --follow 2>/dev/null &
+        aws --endpoint-url=$$ENDPOINT logs tail /aws/lambda/PlaceOrderFunction --follow 2>/dev/null &
+        wait
     networks:
       - openmind-local
 

@@ -22,7 +22,7 @@ public class SnsEventBus(IAmazonSimpleNotificationService snsClient) : IEventBus
             EventId = domainEvent.EventId,
             EventType = domainEvent.EventType,
             OccurredAt = domainEvent.OccurredAt,
-            Data = domainEvent
+            Data = (object)domainEvent
         };
 
         var request = new PublishRequest

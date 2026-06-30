@@ -22,8 +22,9 @@ public partial class UpdateOrderStatusFunction
         {
             var credentials = new Amazon.Runtime.BasicAWSCredentials("test", "test");
             var localstackEndpoint = Environment.GetEnvironmentVariable("LOCALSTACK_ENDPOINT") ?? "http://localhost:4566";
+            var region = Environment.GetEnvironmentVariable("AWS_DEFAULT_REGION") ?? "ap-southeast-2";
             services.AddSingleton<IAmazonSimpleNotificationService>(_ => new AmazonSimpleNotificationServiceClient(
-                credentials, new AmazonSimpleNotificationServiceConfig { ServiceURL = localstackEndpoint }));
+                credentials, new AmazonSimpleNotificationServiceConfig { ServiceURL = localstackEndpoint, AuthenticationRegion = region }));
         }
         else
         {
