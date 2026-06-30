@@ -319,7 +319,8 @@ services:
   localstack-logs:
     image: amazon/aws-cli
     depends_on:
-      - localstack-setup
+      localstack-http-setup:
+        condition: service_completed_successfully
     environment:
       AWS_ACCESS_KEY_ID: test
       AWS_SECRET_ACCESS_KEY: test
@@ -330,15 +331,19 @@ services:
       - |
         ENDPOINT=http://localstack:4566
 
-        until aws --endpoint-url=$$ENDPOINT logs describe-log-groups --log-group-name-prefix /aws/lambda 2>/dev/null | grep -q ProcessPaymentFunction; do
-          echo 'Waiting for Lambda log groups...'
-          sleep 3
-        done
+        # Poll every 2 s with a 5 s window so logs appear within 2 s of invocation.
+        # --follow uses StartLiveTail which LocalStack does not support; plain tail works fine.
+        follow() {
+          while true; do
+            aws --endpoint-url=$$ENDPOINT logs tail "$$1" --since 5s 2>/dev/null
+            sleep 2
+          done
+        }
 
-        aws --endpoint-url=$$ENDPOINT logs tail /aws/lambda/ProcessPaymentFunction --follow &
-        aws --endpoint-url=$$ENDPOINT logs tail /aws/lambda/HandlePaymentProcessedFunction --follow &
-        aws --endpoint-url=$$ENDPOINT logs tail /aws/lambda/CreateOrderFunction --follow 2>/dev/null &
-        aws --endpoint-url=$$ENDPOINT logs tail /aws/lambda/PlaceOrderFunction --follow 2>/dev/null &
+        follow /aws/lambda/CreateOrderFunction &
+        follow /aws/lambda/PlaceOrderFunction &
+        follow /aws/lambda/ProcessPaymentFunction &
+        follow /aws/lambda/HandlePaymentProcessedFunction &
         wait
     networks:
       - openmind-local

@@ -41,7 +41,7 @@ public partial class UpdateOrderStatusFunction(IMediator mediator)
                 return ApiResponseHelper.CreateResponse(400, ApiResponse<string>.ErrorResponse("Invalid request body."));
             }
 
-            Logger.LogInformation("Updating status for order {OrderId} to {Status}", orderId, updateRequest.Status);
+            Logger.LogInformation($"Updating status for order {orderId} to {updateRequest.Status}");
 
             var result = await mediator.Send(new UpdateOrderStatusCommand(orderId, updateRequest.Status));
 
@@ -56,7 +56,7 @@ public partial class UpdateOrderStatusFunction(IMediator mediator)
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Error updating status for order {OrderId}", request.PathParameters?["id"]);
+            Logger.LogError(ex, $"Error updating status for order {request.PathParameters?["id"]}");
             return ApiResponseHelper.CreateResponse(500, ApiResponse<string>.ErrorResponse("Internal server error.", [ex.Message]));
         }
     }

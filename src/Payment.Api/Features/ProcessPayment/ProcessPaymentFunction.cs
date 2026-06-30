@@ -43,6 +43,8 @@ public partial class ProcessPaymentFunction(IMediator mediator)
                 {
                     Logger.LogWarning($"Payment failed for order {data.OrderId}: {result.Message}");
                 }
+
+                Logger.LogInformation($"Payment processed for order {data.OrderId}, success: {result.Success}");
             }
             catch (Exception ex)
             {

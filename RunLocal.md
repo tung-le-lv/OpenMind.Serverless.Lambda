@@ -16,7 +16,7 @@ winget install Docker.DockerCompose   # required by podman compose
 
 ---
 
-## Step 1 — Start infrastructure
+## Start infrastructure
 
 ```powershell
 podman compose up -d
@@ -33,17 +33,9 @@ This starts and auto-configures:
 | `ProcessPaymentFunction` | registered in LocalStack, triggered by `payment-order-events-sqs` |
 | `HandlePaymentProcessedFunction` | registered in LocalStack, triggered by `order-payment-events-sqs` |
 
-Wait until both setup services complete:
-
-```powershell
-podman compose logs -f localstack-setup localstack-http-setup
-```
-
-`localstack-http-setup` prints the API Gateway base URL at the end — note it for Step 3.
-
 ---
 
-## Step 2 — Build Lambda images
+## Build Lambda ZIPs
 
 Run after any code change:
 
@@ -51,16 +43,16 @@ Run after any code change:
 .\deploy\local\build.ps1
 ```
 
-This builds two images — one per bounded context, not one per function. All Lambda functions within the same project share the same image; the `LAMBDA_HANDLER` environment variable tells LocalStack which handler to invoke at runtime.
+This publishes two self-contained linux-x64 ZIPs — one per bounded context, not one per function. All Lambda functions within the same project share the same ZIP; the `LAMBDA_HANDLER` environment variable tells LocalStack which handler to invoke at runtime.
 
-| Image | Lambda functions inside |
+| ZIP | Lambda functions inside |
 |---|---|
-| `order-api-local:latest` | `CreateOrderFunction`, `PlaceOrderFunction`, `HandlePaymentProcessedFunction`, and all other Order API functions |
-| `payment-api-local:latest` | `ProcessPaymentFunction` |
+| `publish/order-api.zip` | `CreateOrderFunction`, `PlaceOrderFunction`, `HandlePaymentProcessedFunction`, and all other Order API functions |
+| `publish/payment-api.zip` | `ProcessPaymentFunction` |
 
 ---
 
-## Step 3 — Get the API Gateway base URL
+## API Gateway base URL
 
 ```powershell
 podman compose logs localstack-http-setup | Select-String "Base URL"
@@ -70,19 +62,67 @@ The URL looks like: `http://localhost:4566/restapis/abc1234567/local/_user_reque
 
 ---
 
-## Step 4 — Watch logs (new terminal)
+## Logs
 
 ```powershell
 podman compose logs -f localstack-logs
 ```
 
-All four key functions stream here: `CreateOrderFunction`, `PlaceOrderFunction`, `ProcessPaymentFunction`, and `HandlePaymentProcessedFunction`.
+Or this is more reliable. Each lambda function has its own logs.  
+Just paste the whole script to powershell.
 
-> **First invocation per function is slow (~10–30 s)** while LocalStack starts the Lambda container. Subsequent calls are fast.
+```powershell
+$env:AWS_ACCESS_KEY_ID = "test"
+$env:AWS_SECRET_ACCESS_KEY = "test"
+$env:AWS_DEFAULT_REGION = "ap-southeast-2"
 
----
+function Show-LambdaLogs($functionName) {
+    $result = aws --endpoint-url=http://localhost:4566 `
+        logs filter-log-events `
+        --log-group-name "/aws/lambda/$functionName" `
+        --start-time 0 | ConvertFrom-Json
 
-## Step 5 — Send requests
+    $result.events | ForEach-Object {
+        $ts = [DateTimeOffset]::FromUnixTimeMilliseconds($_.timestamp).ToString("HH:mm:ss")
+        $msg = $_.message.Trim()
+        if ($msg -match '^\{') {
+            try {
+                $json = $msg | ConvertFrom-Json
+                $level = $json.level
+                $text  = $json.message
+                if ($text) {
+                    $color = if ($level -eq 'Error') { 'Red' } elseif ($level -eq 'Warning') { 'Yellow' } else { 'Cyan' }
+                    Write-Host "$ts [$level] $text" -ForegroundColor $color
+                }
+            } catch {}
+        } elseif ($msg -match '^(START|END|REPORT)') {
+            Write-Host "$ts $msg" -ForegroundColor DarkGray
+        }
+    }
+}
+
+Show-LambdaLogs ProcessPaymentFunction
+```
+
+Sample logs:
+```powershell
+PS C:\Data\OpenMind-Public\OpenMind.Serverless> Show-LambdaLogs PlaceOrderFunction
+07:55:26 START RequestId: 44fc32ec-7d38-42b1-8e82-fd207b48734f Version: $LATEST
+07:55:26 [Information] Placing order 3b736b1e-1bdf-41f9-9d95-c604f82d5efd
+07:55:26 END RequestId: 44fc32ec-7d38-42b1-8e82-fd207b48734f
+07:55:26 REPORT RequestId: 44fc32ec-7d38-42b1-8e82-fd207b48734f Duration: 358.60 ms     Billed Duration: 359 ms Memory Size: 128 MB     Max Memory Used: 128 MB
+
+PS C:\Users\tung.le> Show-LambdaLogs ProcessPaymentFunction
+07:55:28 START RequestId: be58374a-7827-4575-ba7c-28479efb0660 Version: $LATEST
+07:55:28 [Information] Processing payment for order 3b736b1e-1bdf-41f9-9d95-c604f82d5efd, customer cust-11, amount 149.97
+07:55:28 [Information] Payment processed for order 3b736b1e-1bdf-41f9-9d95-c604f82d5efd, success: True
+07:55:28 END RequestId: be58374a-7827-4575-ba7c-28479efb0660
+07:55:28 REPORT RequestId: be58374a-7827-4575-ba7c-28479efb0660 Duration: 194.41 ms     Billed Duration: 195 ms Memory Size: 128 MB     Max Memory Used: 128 MB
+```
+
+## Send requests
+
+Can use postman.
 
 Replace `{BASE_URL}` with the URL from Step 3.
 
@@ -133,13 +173,8 @@ POST /orders/{id}/place
 
 ```powershell
 .\deploy\local\build.ps1
-podman compose restart localstack
+podman compose down
+podman compose up -d
 ```
 
 ---
-
-## Inspect DynamoDB
-
-Use [NoSQL Workbench](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/workbench.html):
-
-**Operation Builder → Add Connection → DynamoDB Local → hostname `localhost`, port `8000`**

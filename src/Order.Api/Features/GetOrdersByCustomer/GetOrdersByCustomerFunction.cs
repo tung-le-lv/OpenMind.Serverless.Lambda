@@ -27,14 +27,14 @@ public partial class GetOrdersByCustomerFunction(IMediator mediator)
                 return ApiResponseHelper.CreateResponse(400, ApiResponse<IEnumerable<OrderDto>>.ErrorResponse("Customer ID is required."));
             }
 
-            Logger.LogInformation("Getting orders for customer {CustomerId}", customerId);
+            Logger.LogInformation($"Getting orders for customer {customerId}");
 
             var result = await mediator.Send(new GetOrdersByCustomerQuery(customerId));
             return ApiResponseHelper.CreateResponse(200, ApiResponse<IEnumerable<OrderDto>>.SuccessResponse(result));
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Error getting orders for customer {CustomerId}", request.PathParameters?["customerId"]);
+            Logger.LogError(ex, $"Error getting orders for customer {request.PathParameters?["customerId"]}");
             return ApiResponseHelper.CreateResponse(500, ApiResponse<IEnumerable<OrderDto>>.ErrorResponse("Internal server error.", [ex.Message]));
         }
     }

@@ -27,7 +27,7 @@ public partial class GetOrderFunction(IMediator mediator)
                 return ApiResponseHelper.CreateResponse(400, ApiResponse<OrderDto>.ErrorResponse("Order ID is required."));
             }
 
-            Logger.LogInformation("Getting order {OrderId}", orderId);
+            Logger.LogInformation($"Getting order {orderId}");
 
             var result = await mediator.Send(new GetOrderQuery(orderId));
 
@@ -40,7 +40,7 @@ public partial class GetOrderFunction(IMediator mediator)
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Error getting order {OrderId}", request.PathParameters?["id"]);
+            Logger.LogError(ex, $"Error getting order {request.PathParameters?["id"]}");
             return ApiResponseHelper.CreateResponse(500, ApiResponse<OrderDto>.ErrorResponse("Internal server error.", [ex.Message]));
         }
     }

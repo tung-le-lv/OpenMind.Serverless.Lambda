@@ -28,7 +28,7 @@ public partial class DeleteOrderFunction(IMediator mediator)
                 return ApiResponseHelper.CreateResponse(400, ApiResponse<string>.ErrorResponse("Order ID is required."));
             }
 
-            Logger.LogInformation("Deleting order {OrderId}", orderId);
+            Logger.LogInformation($"Deleting order {orderId}");
 
             var result = await mediator.Send(new DeleteOrderCommand(orderId));
 
@@ -42,7 +42,7 @@ public partial class DeleteOrderFunction(IMediator mediator)
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Error deleting order {OrderId}", request.PathParameters?["id"]);
+            Logger.LogError(ex, $"Error deleting order {request.PathParameters?["id"]}");
             return ApiResponseHelper.CreateResponse(500, ApiResponse<string>.ErrorResponse("Internal server error.", [ex.Message]));
         }
     }

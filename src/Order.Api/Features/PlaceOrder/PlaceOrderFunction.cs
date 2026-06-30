@@ -28,7 +28,7 @@ public partial class PlaceOrderFunction(IMediator mediator)
                 return ApiResponseHelper.CreateResponse(400, ApiResponse<string>.ErrorResponse("Order ID is required."));
             }
 
-            Logger.LogInformation("Placing order {OrderId}", orderId);
+            Logger.LogInformation($"Placing order {orderId}");
 
             var result = await mediator.Send(new PlaceOrderCommand(orderId));
 
@@ -43,7 +43,7 @@ public partial class PlaceOrderFunction(IMediator mediator)
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Error placing order {OrderId}", request.PathParameters?["id"]);
+            Logger.LogError(ex, $"Error placing order {request.PathParameters?["id"]}");
             return ApiResponseHelper.CreateResponse(500, ApiResponse<string>.ErrorResponse("Internal server error.", [ex.Message]));
         }
     }
