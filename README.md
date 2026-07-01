@@ -11,6 +11,12 @@
   - [Message Ordering with FIFO](#message-ordering-with-fifo)
   - [Lambda Auto-Scaling from SQS](#lambda-auto-scaling-from-sqs)
 - [DynamoDB](#dynamodb)
+  - [Partition key](#partition-key)
+  - [Partition key + Sort key](#partition-key--sort-key)
+  - [Global Secondary Index](#global-secondary-index)
+  - [Local Secondary Index](#local-secondary-index)
+  - [Scan Request](#scan-request)
+  - [UI Tool](#ui-tool)
 - [Run](#run)
 - [References](#references)
 
@@ -108,6 +114,200 @@ SQS FIFO: Lambda instances are automatically scaled based on number of active me
 
 ## DynamoDB
 
+**Table Design**
+
+| `OrderId` | `CustomerId` | `OrderDate` | `LineItems` |
+| --- | --- | --- | --- |
+| order-001 | cus-001 | 2025-1-1 | [ { "ProductId": "prod-1", "ProductName": "Widget", "Quantity": 2, "UnitPrice": 9.99 }] |
+| order-002 | cus-001 | 2025-1-2 | [ { "ProductId": "prod-2", "ProductName": "Widget 2", "Quantity": 1, "UnitPrice": 8 }] |
+| order-003 | cus-002 | 2025-1-2 | [ { "ProductId": "prod-1", "ProductName": "Widget", "Quantity": 2, "UnitPrice": 9.99 }] |
+
+### Partition key
+
+`OrderId = PartitionKey`
+
+`OrderId`  is unique across the table → Primary key
+
+Scenario: Query pattern is for retrieving details for single order.
+
+```csharp
+return await _dynamoDbClient.GetItemAsync(new GetItemRequest
+{
+    TableName = "Orders",
+    Key = new Dictionary<string, AttributeValue>
+    {
+        { "OrderId", new AttributeValue { S = orderId } }
+    }
+});
+```
+
+### Partition key + Sort key
+
+On a base table, keys must be unique:
+
+- Partition key only → one item per partition-key value.
+- Partition key + sort key → the combination must be unique → one partition-key value can hold multiple items.
+
+`CustomerId` = Partition Key
+`OrderDate` = Sort Key
+Primary key = `CustomerId + OrderDate`
+
+Scenario:
+
+- Frequently need to get all orders for a single customer.
+- Query for a specific order by `CustomerId + OrderDate`.
+- This setup means the `CustomerId` partition contains all of that customer's orders in sorted order by `OrderDate`.
+
+Query all orders for customer:
+
+```csharp
+var request = new QueryRequest
+{
+    TableName = "Orders",
+    KeyConditionExpression = "CustomerId = :customerId",
+    ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+    {
+        { ":customerId", new AttributeValue { S = "CUST123" } }
+    }
+};
+
+var response = await _dynamoDbClient.QueryAsync(request);
+```
+
+Query exact customer + order:
+
+```csharp
+var request = new QueryRequest
+{
+    TableName = "Orders",
+    KeyConditionExpression = "CustomerId = :customerId AND OrderDate = :orderDate",
+    ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+    {
+        { ":customerId", new AttributeValue { S = "CUST001" } },
+        { ":orderDate",  new AttributeValue { S = "2024-01-15" } }
+    },
+    ConsistentRead = true
+};
+
+var response = await _dynamoDbClient.QueryAsync(request);
+```
+
+### Global Secondary Index
+
+Global Secondary Index (GSI) lets you query by attributes that are not the base table's primary key.
+
+- A GSI is a read-only projection cloned from the base table, kept in sync asynchronously. You write to the base table, never to the GSI directly.
+- GSI reads are eventually consistent only.
+- GIS read model does not clone all properties from the base table unless you specify them (use **`INCLUDE`).**
+
+```powershell
+aws --endpoint-url=http://dynamodb-local:8000 dynamodb create-table -global-secondary-indexes '[{"IndexName":"CustomerIdIndex","KeySchema":[{"AttributeName":"customerId","KeyType":"HASH"}],"Projection":{"ProjectionType":"ALL"}}]'
+```
+
+- GSI keys are not required to be unique (neither partition key, sort key, nor the combination).
+- GSI can be added or removed at any time after table creation.
+- Can create up to 20 GSI per table.
+- It requires IndexName (GSI name) in the query request.
+
+Example. Create GSI:
+
+- Partition Key: `OrderDate`
+- Sort Key: `OrderId`
+
+The base table uses `OrderId` as its partition key, so "find all orders on a given date" would require a full table `Scan`. Adding a GSI with `OrderDate` as the partition key turns that into an indexed `Query`.
+
+Items are placed into partitions by their partition key (`OrderDate`), so all orders on the same date are co-located automatically. Note that GSI keys are not required to be unique: many orders can share the same `OrderDate`, and the `Query` returns all of them.
+
+The `OrderId` sort key lets you:
+
+- narrow a query to a specific order or a range of `OrderId`s within a date,
+- return results in a predictable, sorted order, paginate stably.
+
+```csharp
+public async Task<List<Dictionary<string, AttributeValue>>>
+    QueryOrdersByDateAsync(DateTime orderDate)
+{
+    var request = new QueryRequest
+    {
+        TableName = "Orders",
+        IndexName = "OrderDate-OrderId-index",
+        KeyConditionExpression = "OrderDate = :pk",
+        ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+        {
+            { ":pk", new AttributeValue { S = orderDate.ToString("yyyy-MM-dd") } }
+        }
+    };
+
+    return await _dynamoDbClient.QueryAsync(request);
+}
+```
+
+### Local Secondary Index
+
+Allow query on an alternate sort key, but same partition key as the base table. LSI must be defined when table is created.
+
+![lsi](docs/lsi.png)
+
+Create Local Secondary Index:
+
+- Partition Key: `CustomerId` (same as base table)
+- Sort Key: `OrderTotal`
+
+```csharp
+// Search cus-001's orders with total between 100 and 500, sorted by OrderTotal descending
+var request = new QueryRequest
+{
+    TableName = "Orders",
+    IndexName = "CustomerId-OrderTotal-index", // LSI name
+    KeyConditionExpression = "CustomerId = :customerId AND OrderTotal BETWEEN :min AND :max",
+    ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+    {
+        { ":customerId", new AttributeValue { S = "CUST001" } },
+        { ":min", new AttributeValue { N = "100" } },
+        { ":max", new AttributeValue { N = "500" } }
+    },
+    ScanIndexForward = false  // largest totals first; omit or set true for ascending
+};
+
+var response = await _dynamoDbClient.QueryAsync(request);
+```
+
+### Scan Request
+
+Can retrieve any data from table but need to scan the entire table.
+
+```csharp
+var request = new ScanRequest
+{
+    TableName = "Orders",
+    FilterExpression = "OrderStatus = :status",
+    ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+    {
+        { ":status", new AttributeValue { S = "Completed" } }
+    }
+};
+
+return await _dynamoDbClient.ScanAsync(request);
+```
+
+—> Better solution is to add a **GSI with `OrderStatus` as the partition key:**
+
+```jsx
+var request = new QueryRequest
+{
+    TableName = "Orders",
+    IndexName = "OrderStatus-index",
+    KeyConditionExpression = "OrderStatus = :status",
+    ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+    {
+        { ":status", new AttributeValue { S = "Completed" } }
+    }
+};
+
+return await _dynamoDbClient.QueryAsync(request);
+```
+
+### UI Tool
 Use [NoSQL Workbench](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/workbench.html) to browse data locally.
 
 Add a connection: **Operation Builder → Add Connection → DynamoDB Local → hostname `localhost`, port `8000`**.
