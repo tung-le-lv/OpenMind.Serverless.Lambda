@@ -1,5 +1,19 @@
 # Serverless Architecture and Function as a Service
 
+## Table of Contents
+
+- [Overview](#overview)
+- [Design Strategy](#design-strategy)
+- [AWS Services for Serverless Architecture](#aws-services-for-serverless-architecture)
+- [SNS-SQS](#sns-sqs)
+  - [Pattern: Fan-out via SNS → SQS](#pattern-fan-out-via-sns--sqs)
+  - [Standard vs FIFO](#standard-vs-fifo)
+  - [Message Ordering with FIFO](#message-ordering-with-fifo)
+  - [Lambda Auto-Scaling from SQS](#lambda-auto-scaling-from-sqs)
+- [DynamoDB](#dynamodb)
+- [Run](#run)
+- [References](#references)
+
 ## Overview
 
 **Serverless Architecture** is a design philosophy where you build systems entirely from managed cloud services, where you never provision or operate infrastructure yourself. The cloud provider handles servers, OS patching, scaling, and availability. You pay only for what you consume and idle resources cost nothing. Scaling is special, where resources can be scaled to down Zero.
@@ -99,6 +113,10 @@ Use [NoSQL Workbench](https://docs.aws.amazon.com/amazondynamodb/latest/develope
 Add a connection: **Operation Builder → Add Connection → DynamoDB Local → hostname `localhost`, port `8000`**.
 
 ![NoSQL Workbench](docs/aws-workbench.jpg)
+
+## Run
+
+Refer [RunIntegrationLocal.md](RunIntegrationLocal.md) and [RunLocalAndDebug.md](RunLocalAndDebug.md).
 
 ## References
 https://github.com/serverless/examples/tree/master/aws-dotnet-rest-api-with-dynamodb
