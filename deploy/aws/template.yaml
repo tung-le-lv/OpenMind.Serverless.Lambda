@@ -61,7 +61,9 @@ Resources:
   PaymentEventsTopic:
     Type: AWS::SNS::Topic
     Properties:
-      TopicName: !Sub 'payment-events-topic-${Environment}'
+      TopicName: !Sub 'payment-events-topic-${Environment}.fifo'
+      FifoTopic: true
+      ContentBasedDeduplication: true
 
   # DynamoDB Table for Payments
   PaymentsTable:
@@ -130,7 +132,9 @@ Resources:
   OrderPaymentEventsQueue:
     Type: AWS::SQS::Queue
     Properties:
-      QueueName: !Sub 'order-payment-events-sqs-${Environment}'
+      QueueName: !Sub 'order-payment-events-sqs-${Environment}.fifo'
+      FifoQueue: true
+      ContentBasedDeduplication: true
       VisibilityTimeout: 300
       RedrivePolicy:
         deadLetterTargetArn: !GetAtt OrderPaymentEventsDLQ.Arn
@@ -139,7 +143,8 @@ Resources:
   OrderPaymentEventsDLQ:
     Type: AWS::SQS::Queue
     Properties:
-      QueueName: !Sub 'order-payment-events-dlq-${Environment}'
+      QueueName: !Sub 'order-payment-events-dlq-${Environment}.fifo'
+      FifoQueue: true
 
   OrderPaymentEventsQueuePolicy:
     Type: AWS::SQS::QueuePolicy

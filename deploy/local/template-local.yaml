@@ -14,7 +14,7 @@ Globals:
         AWS_ENDPOINT_URL: http://dynamodb-local:8000
         LOCALSTACK_ENDPOINT: http://localstack:4566
         ORDER_EVENTS_TOPIC_ARN: arn:aws:sns:ap-southeast-2:000000000000:order-events-topic-local
-        PAYMENT_EVENTS_TOPIC_ARN: arn:aws:sns:ap-southeast-2:000000000000:payment-events-topic-local
+        PAYMENT_EVENTS_TOPIC_ARN: arn:aws:sns:ap-southeast-2:000000000000:payment-events-topic-local.fifo
         AWS_ACCESS_KEY_ID: test
         AWS_SECRET_ACCESS_KEY: test
         AWS_DEFAULT_REGION: ap-southeast-2

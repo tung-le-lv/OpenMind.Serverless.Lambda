@@ -1,6 +1,6 @@
-## Serverless Architecture and Function as a Service
+# Serverless Architecture and Function as a Service
 
-### Overview
+## Overview
 
 **Serverless Architecture** is a design philosophy where you build systems entirely from managed cloud services, where you never provision or operate infrastructure yourself. The cloud provider handles servers, OS patching, scaling, and availability. You pay only for what you consume and idle resources cost nothing. Scaling is special, where resources can be scaled to down Zero.
 
@@ -14,7 +14,7 @@
 - **Short-lived** — AWS Lambda enforces a 15-minute maximum timeout. Long-running work (report generation, bulk imports) belongs in ECS Tasks or Step Functions.
 - **Event-driven** — functions are triggered by something: an HTTP request, a queue message, a schedule, a file upload. There is no "always-on" process.
 
-### Design Strategy
+## Design Strategy
 
 Functions should be grouped by Bounded Context (BC). In general, each BC should be owned by a single team and have its own Git repository.  
 
@@ -43,7 +43,7 @@ Features/
 
 Note that I made Payment BC part of the same git repo as Order BC for demonstration purpose.
 
-### AWS Services for Serverless Architecture
+## AWS Services for Serverless Architecture
 
 | Layer | AWS Service | Why it fits |
 |---|---|---|
@@ -54,150 +54,45 @@ Note that I made Payment BC part of the same git repo as Order BC for demonstrat
 | **Orchestration** | Step Functions | Coordinates multi-step workflows (e.g. order → payment → fulfillment → notification) with retries, timeouts, and branching. This is actually a Process Manager or Saga Orchestator |
 | **REST API** | API Gateway | Managed HTTP/REST/WebSocket endpoint; routes requests to Lambda without running a web server |
 
-## Local Development
+## SNS-SQS
 
-### Start DynamoDB Local
-This launches DynamoDB container along with creating GSI and seeding sample data.
+### Pattern: Fan-out via SNS → SQS
 
-```powershell
-podman compose up -d
+```
+[Service A] ──publish──▶ [SNS Topic] ──subscribe──▶ [SQS Queue A] ──trigger──▶ [Lambda A]
+                                     └──subscribe──▶ [SQS Queue B] ──trigger──▶ [Lambda B]
 ```
 
-### Lambda Test Tool
+### Standard vs FIFO
 
-```powershell
-dotnet tool install -g Amazon.Lambda.TestTool-8.0
+| | Standard | FIFO |
+|---|---|---|
+| Message ordering | Not guaranteed | Guaranteed per message group |
+| Duplicate delivery | Possible | Deduplicated (5-min window) |
 
-dotnet lambda-test-tool-8.0 --port 5050
-```
+### Message Ordering with FIFO
 
-Leave this terminal open. The tool's UI is available at `http://localhost:5050`.
+With a **FIFO** queue:
 
-### Run
+1. **Publisher** sets `MessageGroupId = AggregateId` on each SNS publish call
+2. **SNS FIFO** preserves and propagates `MessageGroupId` to all subscribed SQS FIFO queues
+3. **SQS FIFO** enforces strict ordering within each group — no two messages with the same `MessageGroupId` are in-flight simultaneously
+4. **Lambda** processes at most **one message per group at a time**, regardless of how many Lambda instances are running
 
-Each profile sets `LAMBDA_HANDLER` and all required environment variables automatically via `Properties/launchSettings.json`.  
+Events for aggregate with different IDs (different `MessageGroupId`) are fully parallel.
 
-Run the project with corresponding profile (function). The process starts and connects to the test tool.  
+If a message in group `order-A` fails and is retried, subsequent messages for `order-A` are blocked until the retry resolves. Messages for `order-B`, `order-C`, etc. are unaffected.
 
-### Send a test event
+![SNS-SQS](docs/sns-sqs.jpg)
 
-1. Go to `http://localhost:5050`
-2. Click the **Executable Assembly** link at the top of the page
-3. Paste an API Gateway event into the **Function Input** box and click **Queue Event**
+See [docs/sns-sqs-ordering.excalidraw](docs/sns-sqs-ordering.excalidraw).
 
-Example event for `CreateOrder`:
+### Lambda Auto-Scaling from SQS
 
-```json
-{
-  "httpMethod": "POST",
-  "path": "/orders",
-  "headers": { "Content-Type": "application/json" },
-  "body": "{\"customerId\":\"cust-1\",\"items\":[{\"productId\":\"prod-1\",\"productName\":\"Wireless Mouse\",\"quantity\":2,\"unitPrice\":29.99}]}",
-  "isBase64Encoded": false
-}
-```
+SQS Standard: Lambda instances are automatically scaled based on queue depth.  
+SQS FIFO: Lambda instances are automatically scaled based on number of active message groups.  
 
-More events are from orders.request.event.md
-
-![Lambda Test Tool](docs/lambda-test-tool.jpg)
-
-## Local Deployment
-
-### One-time setup
-
-Install the required tools:
-
-```powershell
-# AWS SAM CLI
-winget install Amazon.SAM-CLI
-
-# docker-compose (needed by podman compose)
-winget install Docker.DockerCompose
-```
-
-Add SAM CLI to your PowerShell profile so it's always in PATH:
-
-```powershell
-# Append to $PROFILE (run once)
-Add-Content $PROFILE "`n`$env:PATH += `";C:\Program Files\Amazon\AWSSAMCLI\bin`""
-```
-
-Verify your Podman machine is configured. The machine name and SSH port are visible via:
-
-```powershell
-podman machine list
-podman machine inspect <machine-name>  # note the SSH Port value
-```
-
----
-
-### Starting a dev session
-
-Run these steps in order each time you open a fresh terminal.
-
-#### Step 1 — Start DynamoDB Local
-
-```powershell
-podman compose up -d
-```
-
-This starts DynamoDB Local on port 8000 and creates the `Orders-local` table with the `CustomerIdIndex` GSI.
-
-#### Step 2 — Build
-
-```powershell
-sam build --template-file deploy/aws/template.yaml --base-dir .
-
-podman build -t order-api-local:latest -f deploy/local/Dockerfile.lambda .aws-sam/build/CreateOrderFunction
-```
-
-#### Step 3 — Open SSH tunnel (keep this terminal open)
-
-SAM uses the Docker SDK which requires a TCP socket. This tunnel bridges Windows TCP → Podman's Unix socket inside WSL.
-
-```powershell
-# Get your machine's SSH port (usually 58765, but verify with: podman machine inspect <name>)
-$key = "$env:USERPROFILE\.local\share\containers\podman\machine\machine"
-ssh -N -L 2375:/run/podman/podman.sock -p 58765 -i $key -o StrictHostKeyChecking=no root@127.0.0.1
-```
-
-#### Step 4 — Start SAM (new terminal)
-
-```powershell
-$env:DOCKER_HOST = "tcp://127.0.0.1:2375"
-sam local start-api `
-  --template-file deploy/local/template-local.yaml `
-  --docker-network openmind-local `
-  --skip-pull-image
-```
-
-Or 
-```powershell
-.\deploy\local\start.ps1
-```
-for better logs formatter.  
-
-The API is available at `http://localhost:3000`.
-
-> **First request per endpoint is slow (~30 s)** while SAM builds the Lambda runtime wrapper image. Every request after that is fast.
-
----
-
-### After changing code
-
-```powershell
-sam build --template-file deploy/aws/template.yaml --base-dir .
-podman build -t order-api-local:latest -f deploy/local/Dockerfile.lambda .aws-sam/build/CreateOrderFunction
-```
-
-or  
-```powershell
-.\deploy\local\build.ps1
-```
-
-Then **Ctrl+C** SAM and re-run the `sam local start-api` command from Step 4.
-
-### Inspect DynamoDB
+## DynamoDB
 
 Use [NoSQL Workbench](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/workbench.html) to browse data locally.
 

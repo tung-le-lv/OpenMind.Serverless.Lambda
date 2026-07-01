@@ -7,4 +7,5 @@ public record PaymentFailedEvent(
 ) : DomainEventBase
 {
     public override string EventType => "PaymentFailed";
+    public override string MessageGroupId => OrderId;
 }

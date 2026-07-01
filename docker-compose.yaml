@@ -133,10 +133,10 @@ services:
         done
 
         ORDER_TOPIC_ARN=$$(aws --endpoint-url=$$ENDPOINT sns create-topic --name order-events-topic-local --query TopicArn --output text)
-        PAYMENT_TOPIC_ARN=$$(aws --endpoint-url=$$ENDPOINT sns create-topic --name payment-events-topic-local --query TopicArn --output text)
+        PAYMENT_TOPIC_ARN=$$(aws --endpoint-url=$$ENDPOINT sns create-topic --name payment-events-topic-local.fifo --attributes FifoTopic=true,ContentBasedDeduplication=true --query TopicArn --output text)
 
         PAYMENT_ORDER_QUEUE_URL=$$(aws --endpoint-url=$$ENDPOINT sqs create-queue --queue-name payment-order-events-sqs-local --query QueueUrl --output text)
-        ORDER_PAYMENT_QUEUE_URL=$$(aws --endpoint-url=$$ENDPOINT sqs create-queue --queue-name order-payment-events-sqs-local --query QueueUrl --output text)
+        ORDER_PAYMENT_QUEUE_URL=$$(aws --endpoint-url=$$ENDPOINT sqs create-queue --queue-name order-payment-events-sqs-local.fifo --attributes FifoQueue=true,ContentBasedDeduplication=true --query QueueUrl --output text)
 
         PAYMENT_ORDER_QUEUE_ARN=$$(aws --endpoint-url=$$ENDPOINT sqs get-queue-attributes --queue-url $$PAYMENT_ORDER_QUEUE_URL --attribute-names QueueArn --query Attributes.QueueArn --output text)
         ORDER_PAYMENT_QUEUE_ARN=$$(aws --endpoint-url=$$ENDPOINT sqs get-queue-attributes --queue-url $$ORDER_PAYMENT_QUEUE_URL --attribute-names QueueArn --query Attributes.QueueArn --output text)

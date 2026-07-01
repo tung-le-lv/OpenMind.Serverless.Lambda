@@ -8,4 +8,5 @@ public record PaymentProcessedEvent(
 ) : DomainEventBase
 {
     public override string EventType => "PaymentProcessed";
+    public override string MessageGroupId => OrderId;
 }

@@ -29,6 +29,7 @@ public class SnsEventBus(IAmazonSimpleNotificationService snsClient) : IEventBus
         {
             TopicArn = _topicArn,
             Message = JsonSerializer.Serialize(message),
+            MessageGroupId = domainEvent.MessageGroupId,
             MessageAttributes = new Dictionary<string, MessageAttributeValue>
             {
                 {

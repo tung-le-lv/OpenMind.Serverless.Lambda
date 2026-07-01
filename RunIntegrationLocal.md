@@ -1,4 +1,4 @@
-# Running Locally
+# Running Integration Local
 
 This local run heavily depends on localstack. Used for testing integration between lambda functions.  
 ```
@@ -12,7 +12,16 @@ POST /orders/{id}/place
                                 └─ HandlePaymentProcessedFunction (Lambda)
 ```
 
-All setup relating to SNS, SQS, Lamda, etc are defined in localstack-http-setup in docker-composed.
+All setup relating to SNS, SQS, Lamda, etc are defined in localstack-http-setup and localstack-setup in docker-composed.
+
+
+## After changing code
+
+```powershell
+.\deploy\local\build.ps1
+podman compose down
+podman compose up -d
+```
 
 ## Start infrastructure
 
@@ -156,13 +165,3 @@ Content-Type: application/json
 ```http
 POST {BASE_URL}/orders/{orderId}/place
 ```
-
-## After changing code
-
-```powershell
-.\deploy\local\build.ps1
-podman compose down
-podman compose up -d
-```
-
----
