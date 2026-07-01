@@ -1,7 +1,7 @@
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
-using Order.Api.Application.Dtos;
 using Order.Api.Shared;
+using Order.Api.Shared.Application.Dtos;
 
 namespace Order.Api.Features.GetOrdersByCustomer;
 

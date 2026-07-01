@@ -1,10 +1,10 @@
 using Amazon.DynamoDBv2;
 using Amazon.SimpleNotificationService;
 using Microsoft.Extensions.DependencyInjection;
-using Order.Api.Application.Interfaces;
 using Order.Api.Domain.Repositories;
 using Order.Api.Infrastructure.EventBus;
 using Order.Api.Infrastructure.Repositories;
+using Order.Api.Shared.Application.Interfaces;
 
 namespace Order.Api.Shared;
 

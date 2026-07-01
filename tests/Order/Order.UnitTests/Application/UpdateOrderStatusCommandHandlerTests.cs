@@ -1,11 +1,11 @@
 ﻿using FluentAssertions;
 using Moq;
-using Order.Api.Application.Interfaces;
 using Order.Api.Domain.Entities;
 using Order.Api.Domain.Enums;
 using Order.Api.Domain.Events;
 using Order.Api.Domain.Repositories;
 using Order.Api.Features.UpdateOrderStatus;
+using Order.Api.Shared.Application.Interfaces;
 using Xunit;
 
 namespace Order.UnitTests.Application;

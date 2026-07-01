@@ -4,13 +4,13 @@ using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
-using Order.Api.Application.Interfaces;
 using Order.Api.Domain.Repositories;
 using Order.Api.Features.AddOrderItem;
 using Order.Api.Features.CreateOrder;
 using Order.Api.Infrastructure.Repositories;
 
 using Order.Api.Shared;
+using Order.Api.Shared.Application.Interfaces;
 using Testcontainers.DynamoDb;
 using Xunit;
 

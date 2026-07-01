@@ -2,11 +2,11 @@ using Amazon.DynamoDBv2;
 using Amazon.SimpleNotificationService;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
-using Payment.Api.Application.Interfaces;
 using Payment.Api.Domain.Repositories;
 using Payment.Api.Infrastructure.EventBus;
 using Payment.Api.Infrastructure.PaymentGateway;
 using Payment.Api.Infrastructure.Repositories;
+using Payment.Api.Shared.Application.Interfaces;
 
 namespace Payment.Api.Features.ProcessPayment;
 

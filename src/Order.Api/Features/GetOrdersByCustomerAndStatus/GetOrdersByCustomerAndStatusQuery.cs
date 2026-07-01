@@ -1,6 +1,6 @@
 ﻿using MediatR;
 using Order.Api.Domain.Enums;
-using Order.Api.Application.Dtos;
+using Order.Api.Shared.Application.Dtos;
 
 namespace Order.Api.Features.GetOrdersByCustomerAndStatus;
 

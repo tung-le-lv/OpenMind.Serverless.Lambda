@@ -2,9 +2,9 @@
 using Moq;
 using Order.Api.Domain.Entities;
 using Order.Api.Domain.Events;
-using Order.Api.Application.Interfaces;
 using Order.Api.Domain.Repositories;
 using Order.Api.Features.CreateOrder;
+using Order.Api.Shared.Application.Interfaces;
 using Xunit;
 
 namespace Order.UnitTests.Application;

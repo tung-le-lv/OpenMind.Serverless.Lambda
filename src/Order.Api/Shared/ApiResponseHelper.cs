@@ -2,7 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Amazon.Lambda.APIGatewayEvents;
 
-namespace Order.Api.Shared.Helpers;
+namespace Order.Api.Shared;
 
 internal static class ApiResponseHelper
 {

@@ -4,10 +4,9 @@ using AWS.Lambda.Powertools.Logging;
 using AWS.Lambda.Powertools.Tracing;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
-using Order.Api.Application.Dtos;
 using Order.Api.Domain.Enums;
 using Order.Api.Shared;
-using Order.Api.Shared.Helpers;
+using Order.Api.Shared.Application.Dtos;
 
 namespace Order.Api.Features.GetOrdersByCustomerAndStatus;
 

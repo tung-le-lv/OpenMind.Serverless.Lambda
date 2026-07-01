@@ -6,7 +6,6 @@ using AWS.Lambda.Powertools.Tracing;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Order.Api.Shared;
-using Order.Api.Shared.Helpers;
 
 namespace Order.Api.Features.DeleteOrder;
 

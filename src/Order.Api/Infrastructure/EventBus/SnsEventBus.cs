@@ -2,7 +2,7 @@
 using Amazon.SimpleNotificationService;
 using Amazon.SimpleNotificationService.Model;
 using Order.Api.Domain.Events;
-using Order.Api.Application.Interfaces;
+using Order.Api.Shared.Application.Interfaces;
 
 namespace Order.Api.Infrastructure.EventBus;
 

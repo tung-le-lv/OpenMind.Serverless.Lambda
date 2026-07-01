@@ -1,7 +1,6 @@
 ﻿using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.TestUtilities;
 using FluentAssertions;
-using Order.Api.Application.Dtos;
 using Order.Api.Domain.Enums;
 using Order.Api.Features.CreateOrder;
 using Order.Api.Features.GetOrdersByCustomerAndStatus;
@@ -10,6 +9,7 @@ using Order.Api.Shared;
 using Order.IntegrationTests.Fixtures;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Order.Api.Shared.Application.Dtos;
 using Xunit;
 
 namespace Order.IntegrationTests;

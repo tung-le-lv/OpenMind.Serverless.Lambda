@@ -1,5 +1,5 @@
-using Payment.Api.Application.Interfaces;
 using Payment.Api.Domain.Entities;
+using Payment.Api.Shared.Application.Interfaces;
 
 namespace Payment.Api.Infrastructure.PaymentGateway;
 

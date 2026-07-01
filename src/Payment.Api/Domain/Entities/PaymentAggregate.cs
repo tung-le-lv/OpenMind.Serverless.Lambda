@@ -22,17 +22,17 @@ public class PaymentAggregate
     {
         if (string.IsNullOrWhiteSpace(orderId))
         {
-            throw new PaymentDomainException("Order ID is required.");
+            throw new DomainException("Order ID is required.");
         }
 
         if (string.IsNullOrWhiteSpace(customerId))
         {
-            throw new PaymentDomainException("Customer ID is required.");
+            throw new DomainException("Customer ID is required.");
         }
 
         if (amount <= 0)
         {
-            throw new PaymentDomainException("Payment amount must be greater than zero.");
+            throw new DomainException("Payment amount must be greater than zero.");
         }
 
         return new PaymentAggregate
@@ -87,5 +87,3 @@ public class PaymentAggregate
 
     public void ClearDomainEvents() => _domainEvents.Clear();
 }
-
-public class PaymentDomainException(string message) : Exception(message);

@@ -7,7 +7,6 @@ using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Order.Api.Domain.Enums;
 using Order.Api.Shared;
-using Order.Api.Shared.Helpers;
 using System.Text.Json;
 
 namespace Order.Api.Features.UpdateOrderStatus;

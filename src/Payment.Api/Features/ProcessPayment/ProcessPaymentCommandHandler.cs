@@ -1,7 +1,8 @@
 using MediatR;
-using Payment.Api.Application.Interfaces;
+using Payment.Api.Domain;
 using Payment.Api.Domain.Entities;
 using Payment.Api.Domain.Repositories;
+using Payment.Api.Shared.Application.Interfaces;
 
 namespace Payment.Api.Features.ProcessPayment;
 
@@ -38,7 +39,7 @@ public class ProcessPaymentCommandHandler(
 
             return new ProcessPaymentResult(success, payment.Id, success ? "Payment processed successfully." : "Payment declined.");
         }
-        catch (PaymentDomainException ex)
+        catch (DomainException ex)
         {
             return new ProcessPaymentResult(false, null, ex.Message);
         }

@@ -1,6 +1,6 @@
 using Payment.Api.Domain.Events;
 
-namespace Payment.Api.Application.Interfaces;
+namespace Payment.Api.Shared.Application.Interfaces;
 
 public interface IEventBus
 {

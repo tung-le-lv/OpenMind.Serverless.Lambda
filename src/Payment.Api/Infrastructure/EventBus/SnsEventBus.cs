@@ -1,8 +1,8 @@
 using System.Text.Json;
 using Amazon.SimpleNotificationService;
 using Amazon.SimpleNotificationService.Model;
-using Payment.Api.Application.Interfaces;
 using Payment.Api.Domain.Events;
+using Payment.Api.Shared.Application.Interfaces;
 
 namespace Payment.Api.Infrastructure.EventBus;
 
