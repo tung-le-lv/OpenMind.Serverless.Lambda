@@ -21,11 +21,6 @@ public class OrderAggregate
 
     public static OrderAggregate Create(string customerId)
     {
-        if (string.IsNullOrWhiteSpace(customerId))
-        {
-            throw new DomainException("Customer ID is required.");
-        }
-
         var order = new OrderAggregate
         {
             Id = Guid.NewGuid().ToString(),
@@ -122,7 +117,11 @@ public class OrderAggregate
 
     public void UpdateStatus(OrderStatus newStatus)
     {
-        ValidateStatusTransition(newStatus);
+        if (!Status.CanTransitionTo(newStatus))
+        {
+            throw new DomainException($"Invalid status transition from {Status} to {newStatus}.");
+        }
+
         var oldStatus = Status;
         Status = newStatus;
         UpdateTimestamp();
@@ -152,25 +151,6 @@ public class OrderAggregate
         _items.Clear();
         _items.AddRange(items);
         return this;
-    }
-
-    private void ValidateStatusTransition(OrderStatus newStatus)
-    {
-        var validTransitions = new Dictionary<OrderStatus, OrderStatus[]>
-        {
-            { OrderStatus.Pending, [OrderStatus.Confirmed, OrderStatus.Cancelled, OrderStatus.PaymentConfirmed] },
-            { OrderStatus.PaymentConfirmed, [OrderStatus.Processing, OrderStatus.Cancelled] },
-            { OrderStatus.Confirmed, [OrderStatus.Processing, OrderStatus.Cancelled, OrderStatus.PaymentConfirmed] },
-            { OrderStatus.Processing, [OrderStatus.Shipped, OrderStatus.Cancelled] },
-            { OrderStatus.Shipped, [OrderStatus.Delivered] },
-            { OrderStatus.Delivered, [] },
-            { OrderStatus.Cancelled, [] }
-        };
-
-        if (!validTransitions.TryGetValue(Status, out var allowed) || !allowed.Contains(newStatus))
-        {
-            throw new DomainException($"Invalid status transition from {Status} to {newStatus}.");
-        }
     }
 
     private void RecalculateTotal()
